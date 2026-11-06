@@ -24,8 +24,23 @@
     Parking: {{ prop.access_parking|default:"—" }}
   </p>
   {% if prop.access_notes %}<p>{{ prop.access_notes|linebreaksbr }}</p>{% endif %}
+  <p><a class="button" href="{% url 'followup:plan_create' customer.pk prop.pk %}">Record recurring offer</a></p>
 </section>
 {% empty %}
 <section class="card"><p class="muted">No property on file.</p></section>
 {% endfor %}
+{% if recurring_plans %}
+<section class="card">
+  <h2>Recurring offers</h2>
+  <ul>
+    {% for plan in recurring_plans %}
+      <li>
+        <a href="{% url 'followup:plan_detail' plan.pk %}">{{ plan.get_frequency_display }}</a>
+        · next {{ plan.next_service_date }}
+        {% if plan.discount_percent %}· {{ plan.discount_percent }}%{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% endblock %}

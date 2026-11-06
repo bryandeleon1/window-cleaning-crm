@@ -22,7 +22,7 @@ This is a single-tenant Django monolith: a polished marketing site living alongs
 | `quoting` | Editable rate card + itemized quotes; send / accept / lose |
 | `jobs` | Schedule / weather hold / complete / private photos |
 | `billing` | Invoices from jobs + cash/check/Venmo/other; Stripe URL placeholder |
-| `followup` | Review ask + recurring offer (later) |
+| `followup` | Review-ask email + recurring offer (frequency / next date / optional discount) |
 | `notifications` | Email path used for leads; **SMS is a stub** |
 
 ## Stubs (explicit)
@@ -95,9 +95,10 @@ GitHub Actions runs the same checks against Postgres on every pull request.
 - Accept creates Customer + one Property + Job and marks the lead won
 - Jobs: `/owner/jobs/`
 - Invoices: `/owner/invoices/`
+- Follow-up: `/owner/followup/`
 
 ## What this PR does / does not
 
-**PR 5 (invoices + payments):** Invoice/InvoiceLine from a job's quote (snapshotted totals); Payment (cash/check/Venmo/other) with provider/external_id stubs; nullable `hosted_payment_url` placeholder (no Stripe SDK/charges).
+**PR 6 (review-ask + recurring):** `ReviewRequest` email with snapshotted demo Google review URL; `RecurringPlan` (biannual/quarterly/annual, next date, optional discount) as a recorded offer — not membership billing.
 
-**Not in this PR:** Stripe SDK/charges/webhooks, review-ask, recurring offer, live SMS, `seed_demo`, or production deploy.
+**Not in this PR:** `seed_demo`/deploy, Google APIs, live SMS, membership auto-charge, Stripe changes.

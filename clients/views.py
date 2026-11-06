@@ -16,4 +16,11 @@ def customer_detail(request, pk):
         Customer.objects.prefetch_related("properties"),
         pk=pk,
     )
-    return render(request, "clients/customer_detail.html", {"customer": customer})
+    from followup.models import RecurringPlan
+
+    recurring_plans = RecurringPlan.objects.filter(customer=customer, is_active=True)
+    return render(
+        request,
+        "clients/customer_detail.html",
+        {"customer": customer, "recurring_plans": recurring_plans},
+    )

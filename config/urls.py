@@ -13,6 +13,7 @@ urlpatterns = [
     path("owner/quotes/", include("quoting.urls")),
     path("owner/jobs/", include("jobs.urls")),
     path("owner/invoices/", include("billing.urls")),
+    path("owner/followup/", include("followup.urls")),
     path("quote/", lead_views.public_quote, name="public_quote"),
     path("integrations/leads/", lead_views.inbound_webhook, name="leads_webhook"),
     path("", include("marketing.urls")),

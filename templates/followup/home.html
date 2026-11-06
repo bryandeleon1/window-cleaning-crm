@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Follow-up{% endblock %}
+{% block brand %}Follow-up{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Follow-up</h1>
+  <p class="muted">Review asks (email) and recurring offers. Not membership billing.</p>
+  <p><a class="button" href="{% url 'accounts:home' %}" style="background:#5b6472">Owner home</a></p>
+</section>
+<section class="card">
+  <h2>Recent review asks</h2>
+  {% if review_requests %}
+  <ul style="list-style:none;padding:0">
+    {% for rr in review_requests %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.75rem 0">
+      <strong>{{ rr.customer.name }}</strong> · job <a href="{% url 'jobs:detail' rr.job_id %}">#{{ rr.job_id }}</a>
+      <div class="muted">{{ rr.sent_at }} · {{ rr.recipient_email }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No review asks sent yet. Complete a job, then send from the job page.</p>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>Active recurring offers</h2>
+  {% if plans %}
+  <ul style="list-style:none;padding:0">
+    {% for plan in plans %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.75rem 0">
+      <a href="{% url 'followup:plan_detail' plan.pk %}"><strong>{{ plan.customer.name }}</strong></a>
+      <div class="muted">{{ plan.get_frequency_display }} · next {{ plan.next_service_date }}{% if plan.discount_percent %} · {{ plan.discount_percent }}% off{% endif %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No recurring offers yet. Add one from a customer or job page.</p>
+  {% endif %}
+</section>
+{% endblock %}

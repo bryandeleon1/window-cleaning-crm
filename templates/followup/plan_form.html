@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{% if plan %}Edit{% else %}New{% endif %} recurring offer{% endblock %}
+{% block brand %}Recurring offer{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'clients:detail' customer.pk %}">← {{ customer.name }}</a></p>
+  <h1>{% if plan %}Edit{% else %}New{% endif %} recurring offer</h1>
+  <p class="muted">{{ property.address_line1 }} — recorded offer only, not auto-billing.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field.errors }}
+      {{ field }}
+      {% if field.help_text %}<p class="muted">{{ field.help_text }}</p>{% endif %}
+    {% endfor %}
+    <button type="submit">Save</button>
+  </form>
+</section>
+{% endblock %}

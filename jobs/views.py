@@ -32,14 +32,19 @@ def job_detail(request, pk):
         pk=pk,
     )
     from billing.models import Invoice
+    from followup.models import ReviewRequest
 
     invoice = Invoice.objects.filter(job=job).first()
+    latest_review_request = (
+        ReviewRequest.objects.filter(job=job).order_by("-sent_at").first()
+    )
     return render(
         request,
         "jobs/job_detail.html",
         {
             "job": job,
             "invoice": invoice,
+            "latest_review_request": latest_review_request,
             "schedule_form": ScheduleJobForm(
                 initial={
                     "scheduled_date": job.scheduled_date,
