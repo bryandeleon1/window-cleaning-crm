@@ -11,8 +11,9 @@ urlpatterns = [
     path("owner/leads/", include("leads.urls")),
     path("owner/clients/", include("clients.urls")),
     path("owner/quotes/", include("quoting.urls")),
+    path("owner/jobs/", include("jobs.urls")),
     path("quote/", lead_views.public_quote, name="public_quote"),
     path("integrations/leads/", lead_views.inbound_webhook, name="leads_webhook"),
     path("", include("marketing.urls")),
 ]
-# Lead photos are served only via login-required leads:photo — never public /media/.
+# Lead/job photos are login-required — never public /media/.

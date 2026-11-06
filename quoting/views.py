@@ -25,10 +25,13 @@ def quote_detail(request, pk):
         pk=pk,
     )
     lose_form = QuoteLoseForm()
+    from jobs.models import Job
+
+    job = Job.objects.filter(quote=quote).first()
     return render(
         request,
         "quoting/quote_detail.html",
-        {"quote": quote, "lose_form": lose_form},
+        {"quote": quote, "lose_form": lose_form, "job": job},
     )
 
 
@@ -97,7 +100,7 @@ def accept(request, pk):
     accept_quote(quote)
     messages.success(
         request,
-        "Quote accepted. Customer and property created. (Job scheduling is PR 4.)",
+        "Quote accepted. Customer, property, and job created.",
     )
     return redirect("quoting:detail", pk=quote.pk)
 

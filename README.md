@@ -20,7 +20,7 @@ This is a single-tenant Django monolith: a polished marketing site living alongs
 | `leads` | Public quote form, phone-lead entry, owner list/detail, inbound webhook |
 | `clients` | Customer + one Property / service address; access notes; nullable commercial future-proof fields |
 | `quoting` | Editable rate card + itemized quotes; send / accept / lose |
-| `jobs` | Schedule / complete / photos (later) |
+| `jobs` | Schedule / weather hold / complete / private photos |
 | `billing` | Invoices + payment recording (later) |
 | `followup` | Review ask + recurring offer (later) |
 | `notifications` | Email path used for leads; **SMS is a stub** |
@@ -92,10 +92,11 @@ GitHub Actions runs the same checks against Postgres on every pull request.
 - Quotes: `/owner/quotes/`
 - Rate card: `/owner/quotes/rate-card/`
 - Build a quote from a lead: `/owner/quotes/from-lead/<lead_id>/`
-- Accept creates Customer + one Property and marks the lead won (Job scheduling is a later PR)
+- Accept creates Customer + one Property + Job and marks the lead won
+- Jobs: `/owner/jobs/`
 
 ## What this PR does / does not
 
-**PR 3 (clients + quoting):** Customer + Property, editable rate card with fictional starter prices, itemized Quote/QuoteLine from a lead, email quote, accept (customer+property, lead won), lose (reason). No Job yet.
+**PR 4 (jobs + photos):** Job on quote accept; schedule (date + morning/afternoon); weather hold / reschedule statuses; complete with timestamp; private photos with optional `use_in_gallery` flag (no auto-publish).
 
-**Not in this PR:** jobs/photos, invoices, review-ask, recurring offer, Stripe, live SMS, `seed_demo`, or production deploy.
+**Not in this PR:** invoices, review-ask, recurring offer, Stripe, live SMS, `seed_demo`, weather API, or production deploy.

@@ -13,7 +13,8 @@
     <strong>Phone:</strong> {{ quote.customer_phone|default:"—" }}<br>
     <strong>Address:</strong> {{ quote.service_address|default:"—" }}<br>
     {% if quote.lead %}<strong>Lead:</strong> <a href="{% url 'leads:detail' quote.lead.pk %}">#{{ quote.lead.pk }} {{ quote.lead.name }}</a><br>{% endif %}
-    {% if quote.lost_reason %}<strong>Lost reason:</strong> {{ quote.lost_reason }}{% endif %}
+    {% if quote.lost_reason %}<strong>Lost reason:</strong> {{ quote.lost_reason }}<br>{% endif %}
+    {% if job %}<strong>Job:</strong> <a href="{% url 'jobs:detail' job.pk %}">#{{ job.pk }}</a>{% endif %}
   </p>
   <table style="width:100%;border-collapse:collapse">
     <thead><tr><th align="left">Line</th><th align="right">Qty</th><th align="right">Price</th><th align="right">Total</th></tr></thead>

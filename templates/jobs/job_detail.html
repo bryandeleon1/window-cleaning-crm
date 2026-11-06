@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Job #{{ job.pk }}{% endblock %}
+{% block brand %}Job{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'jobs:list' %}">← Jobs</a></p>
+  <h1>Job #{{ job.pk }}</h1>
+  <p class="muted">{{ job.get_status_display }}{% if job.completed_at %} · completed {{ job.completed_at }}{% endif %}</p>
+  <p>
+    <strong>Customer:</strong> <a href="{% url 'clients:detail' job.customer.pk %}">{{ job.customer.name }}</a><br>
+    <strong>Property:</strong> {{ job.property.address_line1 }}{% if job.property.city %}, {{ job.property.city }}{% endif %}<br>
+    <strong>Quote:</strong> <a href="{% url 'quoting:detail' job.quote.pk %}">#{{ job.quote.pk }}</a><br>
+    <strong>Scheduled:</strong> {% if job.scheduled_date %}{{ job.scheduled_date }} {{ job.get_time_window_display }}{% else %}—{% endif %}<br>
+    {% if job.status_note %}<strong>Note:</strong> {{ job.status_note }}{% endif %}
+  </p>
+</section>
+
+{% if job.status != "completed" and job.status != "canceled" %}
+<section class="card">
+  <h2>Schedule / reschedule</h2>
+  <p class="muted">Morning or afternoon window — no false-precision clock time.</p>
+  <form method="post" action="{% url 'jobs:schedule' job.pk %}">
+    {% csrf_token %}
+    <label for="{{ schedule_form.scheduled_date.id_for_label }}">Date</label>
+    {{ schedule_form.scheduled_date }}
+    <label for="{{ schedule_form.time_window.id_for_label }}">Window</label>
+    {{ schedule_form.time_window }}
+    <label for="{{ schedule_form.note.id_for_label }}">Note</label>
+    {{ schedule_form.note }}
+    <label><input type="checkbox" name="as_reschedule" {% if schedule_form.initial.as_reschedule %}checked{% endif %}> Mark as reschedule</label>
+    <button type="submit">Save schedule</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Weather hold</h2>
+  <p class="muted">Status only — not a weather API.</p>
+  <form method="post" action="{% url 'jobs:weather_hold' job.pk %}">
+    {% csrf_token %}
+    <label for="{{ weather_form.note.id_for_label }}">Note</label>
+    {{ weather_form.note }}
+    <button type="submit" style="background:#8a5a1f">Place on weather hold</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Complete</h2>
+  <form method="post" action="{% url 'jobs:complete' job.pk %}">
+    {% csrf_token %}
+    <button type="submit">Mark complete</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Photos</h2>
+  <p class="muted">Private by default. <code>use_in_gallery</code> is stored only — no auto-publish.</p>
+  {% if job.photos.all %}
+  <ul>
+    {% for photo in job.photos.all %}
+      <li>
+        <a href="{% url 'jobs:photo' job.pk photo.pk %}">View photo {{ forloop.counter }}</a>
+        {% if photo.use_in_gallery %}<span class="muted">(gallery flag)</span>{% endif %}
+        {% if photo.caption %} — {{ photo.caption }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No photos yet.</p>
+  {% endif %}
+  <form method="post" action="{% url 'jobs:photo_upload' job.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in photo_form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field.errors }}
+      {{ field }}
+      {% if field.help_text %}<p class="muted">{{ field.help_text }}</p>{% endif %}
+    {% endfor %}
+    <button type="submit">Upload photo</button>
+  </form>
+</section>
+{% endblock %}
