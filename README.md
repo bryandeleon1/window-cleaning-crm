@@ -1,14 +1,21 @@
 # window-cleaning-crm
 
-Portfolio Django **site-plus-CRM** for a solo residential window-cleaning business (fictional demo brand: Lakeside Pane Co.).
+Portfolio Django **site-plus-CRM** for a solo residential window-cleaning business (fictional demo brand: **Lakeside Pane Co.**).
 
-This is a single-tenant Django monolith: a polished marketing site living alongside an owner CRM that covers the residential loop — leads → quotes → jobs → invoices → review ask → recurring offer. It is **not** a live customer site. A real owner site (Webflow/Squarespace or a real domain) should be able to replace the dummy marketing site later without rewriting the CRM.
+This is a single-tenant Django monolith: a polished marketing site living alongside an owner CRM that covers the residential loop:
+
+**leads → quotes → jobs → invoices → review ask → recurring offer**
+
+It is **not** a live customer site. A real owner site (Webflow/Squarespace or a real domain) should be able to replace the dummy marketing site later without rewriting the CRM.
+
+**Demo URL:** not hosted yet.
 
 ## Stack
 
 - Django 5.x / Python 3.12
 - Postgres
 - Server-rendered templates + a little HTMX
+- Gunicorn + WhiteNoise for a generic production process
 - Single owner login (phone-simple owner UI; Django admin may exist for bootstrap only)
 
 ## Modular apps
@@ -23,21 +30,7 @@ This is a single-tenant Django monolith: a polished marketing site living alongs
 | `jobs` | Schedule / weather hold / complete / private photos |
 | `billing` | Invoices from jobs + cash/check/Venmo/other; Stripe URL placeholder |
 | `followup` | Review-ask email + recurring offer (frequency / next date / optional discount) |
-| `notifications` | Email path used for leads; **SMS is a stub** |
-
-## Stubs (explicit)
-
-- **Stripe:** placeholder fields only in later PRs — no SDK, no charges, no card vault.
-- **SMS:** `notifications.sms.send(to, body)` logs or no-ops. Email is the demo notification path.
-- **Live owner site:** keep `marketing` isolated. A future Webflow/Squarespace form can `POST /integrations/leads/` with header `X-Leads-Webhook-Secret` (value from `LEADS_WEBHOOK_SECRET`).
-
-## Demo copy (static; not `seed_demo`)
-
-- Brand: Lakeside Pane Co.
-- Owner persona: Jordan Hale
-- Area: Cedar Falls, Waterloo & nearby ZIPs (Central Time)
-- Phone: (555) 010-2040
-- Gallery / owner images are labeled fictional SVG placeholders — not real people or customers.
+| `notifications` | Email is the demo path; **SMS is a stub** |
 
 ## Local setup
 
@@ -50,32 +43,68 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py createsuperuser   # bootstrap owner login
+python manage.py seed_demo
 python manage.py runserver
 ```
 
-Public site:
+### Demo owner login (from `seed_demo`)
+
+| | |
+|---|---|
+| Username | `jordan` |
+| Password | `demo-pass-12345` |
+| Persona | Jordan Hale (fictional) |
+
+`seed_demo` is **idempotent** — safe to re-run. It loads a full fictional residential loop (no real customer PII): rate card, inbound-style accepted quote → customer + property + job, a completed job with invoice + Venmo payment, a review-ask email, a biannual recurring plan, a weather-hold job, plus extra new/lost leads.
+
+## Owner CRM URLs
+
+| Area | Path |
+|---|---|
+| Login | `/login/` |
+| Owner home | `/owner/` |
+| Leads | `/owner/leads/` |
+| Log phone lead | `/owner/leads/new/` |
+| Customers | `/owner/clients/` |
+| Quotes | `/owner/quotes/` |
+| Rate card | `/owner/quotes/rate-card/` |
+| Build quote from lead | `/owner/quotes/from-lead/<lead_id>/` |
+| Jobs | `/owner/jobs/` |
+| Invoices | `/owner/invoices/` |
+| Follow-up | `/owner/followup/` |
+| Django admin (bootstrap only) | `/admin/` |
+
+## Public marketing site
 
 - Home: `/`
-- Quote form POST: `/quote/` (also linked from `/contact/` and `/quote/` pages)
 - Services / area / about / gallery / FAQ / contact: `/services/`, `/service-area/`, `/about/`, `/gallery/`, `/faq/`, `/contact/`
+- Quote form POST: `/quote/`
 
-Owner UI:
+Demo copy (swap without a migration): Lakeside Pane Co.; Jordan Hale; Cedar Falls, Waterloo & nearby ZIPs (Central Time); phone `(555) 010-2040`. Gallery/owner images are labeled fictional SVG placeholders.
 
-- Login: `/login/`
-- Owner home: `/owner/`
-- Leads: `/owner/leads/`
-- Log phone lead: `/owner/leads/new/`
-- Django admin (bootstrap only): `/admin/`
+## Stubs (explicit — as implemented)
 
-Inbound webhook (for a future live site):
+- **Stripe:** placeholder fields only — `Invoice.hosted_payment_url`, `Payment.provider`, `Payment.external_id`. **No** Stripe SDK, charges, webhooks, or card vault. Saving a hosted URL does not charge anyone.
+- **SMS:** `notifications.sms.send(to, body)` logs or no-ops. **Email** is the demo notification path (leads, quotes, review asks).
+- **Live owner site:** keep `marketing` isolated. A future Webflow/Squarespace form can post into the same CRM:
 
-- `POST /integrations/leads/`
-- Header: `X-Leads-Webhook-Secret: <LEADS_WEBHOOK_SECRET>`
-- JSON body fields: `name` (required), `email`, `phone`, `address`/`address_line1`, `city`, `zip_code`, `service_interest`, `stories`, `window_pane_estimate`, `how_heard`, `message`
-- Lead photos are private: served only at `/owner/leads/<id>/photos/<photo_id>/` when logged in (not via public `/media/`).
+```http
+POST /integrations/leads/
+X-Leads-Webhook-Secret: <LEADS_WEBHOOK_SECRET>
+Content-Type: application/json
+```
 
-Pinned dependencies also live in `requirements.lock` (same pins as `requirements.txt` for this scaffold).
+JSON fields: `name` (required), `email`, `phone`, `address`/`address_line1`, `city`, `zip_code`, `service_interest`, `stories`, `window_pane_estimate`, `how_heard`, `message`.
+
+## Private photos
+
+Lead and job photos are **private**. They are served only through login-required owner URLs (e.g. `/owner/leads/<id>/photos/<photo_id>/`, `/owner/jobs/<id>/photos/<photo_id>/`). There is **no** public `/media/` route. The optional `use_in_gallery` flag on job photos is stored only — it does not auto-publish to the marketing gallery.
+
+## How to swap the dummy marketing site later
+
+1. Leave the CRM apps (`leads`, `clients`, `quoting`, `jobs`, `billing`, `followup`, `accounts`) as-is.
+2. Point your live site’s form (or Zapier) at `POST /integrations/leads/` with the shared-secret header.
+3. Stop routing public traffic to the `marketing` app URLs, or replace those templates/static assets. The CRM does not depend on the dummy site’s pages.
 
 ## Tests / CI
 
@@ -86,19 +115,38 @@ python manage.py test
 
 GitHub Actions runs the same checks against Postgres on every pull request.
 
-## Owner CRM (PR 3)
+## Generic deploy config (no host yet)
 
-- Customers: `/owner/clients/`
-- Quotes: `/owner/quotes/`
-- Rate card: `/owner/quotes/rate-card/`
-- Build a quote from a lead: `/owner/quotes/from-lead/<lead_id>/`
-- Accept creates Customer + one Property + Job and marks the lead won
-- Jobs: `/owner/jobs/`
-- Invoices: `/owner/invoices/`
-- Follow-up: `/owner/followup/`
+This repo does **not** sign you up for Render, Fly, Railway, Heroku, or any other host. There is no live demo URL.
 
-## What this PR does / does not
+Production-oriented pieces included:
 
-**PR 6 (review-ask + recurring):** `ReviewRequest` email with snapshotted demo Google review URL; `RecurringPlan` (biannual/quarterly/annual, next date, optional discount) as a recorded offer — not membership billing.
+- `Dockerfile` — Python 3.12, `collectstatic`, `gunicorn config.wsgi:application`
+- `docker-compose.yml` — `db` (Postgres) + optional `web` service
+- WhiteNoise so gunicorn can serve static files without a CDN/S3
+- `.env.example` — production checklist comments
 
-**Not in this PR:** `seed_demo`/deploy, Google APIs, live SMS, membership auto-charge, Stripe changes.
+Typical process on whatever host you choose later:
+
+```bash
+# set DEBUG=False, SECRET_KEY, DATABASE_URL, ALLOWED_HOSTS,
+# email settings, LEADS_WEBHOOK_SECRET — never commit .env
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py seed_demo   # optional fictional demo data
+gunicorn config.wsgi:application --bind 0.0.0.0:8000
+```
+
+Or with Compose (after copying `.env`):
+
+```bash
+docker compose up --build
+docker compose run --rm web python manage.py migrate
+docker compose run --rm web python manage.py seed_demo
+```
+
+## What PR 7 does / does not
+
+**PR 7 (last planned slice):** `seed_demo`, README polish for the full loop, generic Dockerfile/compose/`gunicorn`+WhiteNoise deploy config. Demo URL: not hosted yet.
+
+**Not in this PR:** merging earlier PRs; provisioning a host; live Stripe/SMS/Google APIs; real customer data; extra product features.
