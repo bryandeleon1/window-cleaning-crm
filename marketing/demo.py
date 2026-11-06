@@ -9,6 +9,11 @@ PHONE_DISPLAY = "(555) 010-2040"
 PHONE_TEL = "+15550102040"
 TIME_ZONE_LABEL = "Central Time"
 
+# Fictional placeholder — swap without a migration. Not a live Google API.
+GOOGLE_REVIEW_URL = (
+    "https://g.page/r/lakeside-pane-co-demo-review/review"
+)
+
 SERVICE_AREA_CITIES = [
     "Cedar Falls",
     "Waterloo",

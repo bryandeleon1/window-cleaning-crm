@@ -63,6 +63,25 @@
 {% endif %}
 
 <section class="card">
+  <h2>Follow-up</h2>
+  <p class="muted">Review ask is email-only (demo path). Recurring offer is a recorded plan — not auto-billing.</p>
+  {% if job.status == "completed" %}
+    {% if latest_review_request %}
+      <p>Last review ask: {{ latest_review_request.sent_at }} → {{ latest_review_request.recipient_email }}</p>
+    {% endif %}
+    <form method="post" action="{% url 'followup:send_review_ask' job.pk %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit">Email review ask</button>
+    </form>
+  {% else %}
+    <p class="muted">Complete the job to send a review ask.</p>
+  {% endif %}
+  <p style="margin-top:0.75rem">
+    <a class="button" href="{% url 'followup:plan_create' job.customer_id job.property_id %}">Record recurring offer</a>
+  </p>
+</section>
+
+<section class="card">
   <h2>Photos</h2>
   <p class="muted">Private by default. <code>use_in_gallery</code> is stored only — no auto-publish.</p>
   {% if job.photos.all %}
