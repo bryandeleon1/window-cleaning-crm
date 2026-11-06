@@ -1,11 +1,9 @@
-import mimetypes
-from pathlib import Path
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
+
+from notifications.files import private_image_response
 
 from .forms import JobPhotoUploadForm, ScheduleJobForm, WeatherHoldForm
 from .models import Job, JobPhoto
@@ -71,13 +69,17 @@ def job_schedule(request, pk):
     if not form.is_valid():
         messages.error(request, "Check the schedule date and try again.")
         return redirect("jobs:detail", pk=job.pk)
-    schedule_job(
-        job,
-        scheduled_date=form.cleaned_data["scheduled_date"],
-        time_window=form.cleaned_data.get("time_window") or "",
-        as_reschedule=bool(form.cleaned_data.get("as_reschedule")),
-        note=form.cleaned_data.get("note") or "",
-    )
+    try:
+        schedule_job(
+            job,
+            scheduled_date=form.cleaned_data["scheduled_date"],
+            time_window=form.cleaned_data.get("time_window") or "",
+            as_reschedule=bool(form.cleaned_data.get("as_reschedule")),
+            note=form.cleaned_data.get("note") or "",
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("jobs:detail", pk=job.pk)
     messages.success(request, "Job schedule updated.")
     return redirect("jobs:detail", pk=job.pk)
 
@@ -88,7 +90,11 @@ def job_weather_hold(request, pk):
     job = get_object_or_404(Job, pk=pk)
     form = WeatherHoldForm(request.POST)
     note = form.cleaned_data.get("note") if form.is_valid() else "Weather hold"
-    set_weather_hold(job, note=note or "Weather hold")
+    try:
+        set_weather_hold(job, note=note or "Weather hold")
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("jobs:detail", pk=job.pk)
     messages.success(request, "Job placed on weather hold.")
     return redirect("jobs:detail", pk=job.pk)
 
@@ -97,7 +103,11 @@ def job_weather_hold(request, pk):
 @require_POST
 def job_complete(request, pk):
     job = get_object_or_404(Job, pk=pk)
-    complete_job(job)
+    try:
+        complete_job(job)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("jobs:detail", pk=job.pk)
     messages.success(request, "Job marked complete.")
     return redirect("jobs:detail", pk=job.pk)
 
@@ -122,10 +132,4 @@ def job_photo_upload(request, pk):
 def job_photo(request, pk, photo_id):
     """Serve a job photo only to the logged-in owner (never via public /media/)."""
     photo = get_object_or_404(JobPhoto, pk=photo_id, job_id=pk)
-    if not photo.image:
-        raise Http404("Photo missing.")
-    path = Path(photo.image.path)
-    if not path.is_file():
-        raise Http404("Photo file missing.")
-    content_type, _ = mimetypes.guess_type(str(path))
-    return FileResponse(path.open("rb"), content_type=content_type or "application/octet-stream")
+    return private_image_response(photo.image)

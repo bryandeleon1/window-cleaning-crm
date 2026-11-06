@@ -1,5 +1,8 @@
+import io
+import struct
 import json
 import tempfile
+import zlib
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -7,8 +10,31 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from leads.models import Lead, LeadPhoto
+
+
+def tiny_png(name="photo.png"):
+    buf = io.BytesIO()
+    Image.new("RGB", (2, 2), (30, 120, 200)).save(buf, format="PNG")
+    return SimpleUploadedFile(name, buf.getvalue(), content_type="image/png")
+
+
+def large_dimension_png(name="big.png", width=10000, height=10000):
+    """Small PNG whose header declares dimensions over the pixel budget."""
+    def chunk(kind, data):
+        return (
+            struct.pack(">I", len(data)) + kind + data
+            + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(b"")) + chunk(b"IEND", b"")
+    return SimpleUploadedFile(name, data, content_type="image/png")
+
+
+SVG_BYTES = b'<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'
 
 User = get_user_model()
 
@@ -189,12 +215,7 @@ class LeadPhotoPrivacyTests(TestCase):
         self.addCleanup(self.settings_override.disable)
 
         self.lead = Lead.objects.create(name="Photo Lead", phone="555-010-5555")
-        upload = SimpleUploadedFile(
-            "house.png",
-            b"\x89PNG\r\n\x1a\n" + b"fake-image-bytes",
-            content_type="image/png",
-        )
-        self.photo = LeadPhoto.objects.create(lead=self.lead, image=upload)
+        self.photo = LeadPhoto.objects.create(lead=self.lead, image=tiny_png("house.png"))
 
     def test_unauthenticated_cannot_fetch_lead_photo(self):
         url = reverse("leads:photo", kwargs={"pk": self.lead.pk, "photo_id": self.photo.pk})
@@ -207,6 +228,56 @@ class LeadPhotoPrivacyTests(TestCase):
         url = reverse("leads:photo", kwargs={"pk": self.lead.pk, "photo_id": self.photo.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+
+    def test_stored_non_image_returns_404(self):
+        bad = LeadPhoto.objects.create(
+            lead=self.lead,
+            image=SimpleUploadedFile("x.png", b"<html>hi</html>", content_type="image/png"),
+        )
+        self.client.login(username="jordan", password="test-pass-12345")
+        url = reverse("leads:photo", kwargs={"pk": self.lead.pk, "photo_id": bad.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def _post_quote(self, upload):
+        return self.client.post(
+            reverse("public_quote"),
+            {
+                "name": "Upload Lead",
+                "email": "upload@example.com",
+                "phone": "555-010-4444",
+                "address_line1": "9 Elm",
+                "city": "Waterloo",
+                "zip_code": "50701",
+                "service_interest": Lead.ServiceInterest.EXTERIOR,
+                "photos": upload,
+            },
+        )
+
+    def test_public_form_rejects_non_image_and_svg(self):
+        for upload in (
+            SimpleUploadedFile("notes.jpg", b"just some text", content_type="image/jpeg"),
+            SimpleUploadedFile("pic.png", SVG_BYTES, content_type="image/png"),
+        ):
+            response = self._post_quote(upload)
+            self.assertEqual(response.status_code, 200)
+        self.assertFalse(Lead.objects.filter(name="Upload Lead").exists())
+
+    def test_public_form_rejects_oversized_declared_dimensions(self):
+        response = self._post_quote(large_dimension_png())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This photo is too large.")
+        self.assertFalse(Lead.objects.filter(name="Upload Lead").exists())
+
+    def test_public_form_accepts_small_image_owner_can_view(self):
+        response = self._post_quote(tiny_png())
+        self.assertEqual(response.status_code, 302)
+        photo = LeadPhoto.objects.get(lead__name="Upload Lead")
+        url = reverse("leads:photo", kwargs={"pk": photo.lead_id, "photo_id": photo.pk})
+        self.assertEqual(self.client.get(url).status_code, 302)
+        self.client.login(username="jordan", password="test-pass-12345")
+        self.assertEqual(self.client.get(url)["Content-Type"], "image/png")
 
     def test_public_media_url_does_not_serve_lead_photo(self):
         media_url = f"/media/{self.photo.image.name}"

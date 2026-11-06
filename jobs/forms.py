@@ -1,5 +1,7 @@
 from django import forms
 
+from notifications.images import validate_safe_image
+
 from .models import Job, JobPhoto
 
 
@@ -36,3 +38,8 @@ class JobPhotoUploadForm(forms.ModelForm):
             "image": forms.FileInput(attrs={"accept": "image/*"}),
             "caption": forms.TextInput(),
         }
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        validate_safe_image(image)
+        return image

@@ -96,7 +96,13 @@ def build_quote_from_lead(lead: Lead, line_specs: list[dict]) -> Quote:
 
 @transaction.atomic
 def accept_quote(quote: Quote) -> Quote:
-    """Accept a quote: create Customer + one Property + Job, mark lead won."""
+    """Accept a quote: create Customer + one Property + Job, mark lead won.
+
+    Idempotent for an accepted quote; refuses a lost quote.
+    """
+    _lock_fresh(quote)
+    if quote.status == Quote.Status.LOST:
+        raise ValueError("A lost quote cannot be accepted.")
     if quote.status == Quote.Status.ACCEPTED:
         from jobs.services import ensure_job_for_quote
 
@@ -154,6 +160,11 @@ def lose_quote(quote: Quote, reason: str) -> Quote:
     reason = (reason or "").strip()
     if not reason:
         raise ValueError("A lost reason is required.")
+    _lock_fresh(quote)
+    if quote.status == Quote.Status.ACCEPTED:
+        raise ValueError("An accepted quote cannot be marked lost.")
+    if quote.status == Quote.Status.LOST:
+        raise ValueError("This quote is already lost.")
     quote.status = Quote.Status.LOST
     quote.lost_reason = reason
     quote.save(update_fields=["status", "lost_reason", "updated_at"])
@@ -162,4 +173,28 @@ def lose_quote(quote: Quote, reason: str) -> Quote:
         lead.status = Lead.Status.LOST
         lead.lost_reason = reason
         lead.save(update_fields=["status", "lost_reason", "updated_at"])
+    return quote
+
+
+def _lock_fresh(quote: Quote) -> None:
+    """Reload the quote under a row lock so stale objects/double posts see current status."""
+    fresh = Quote.objects.select_for_update().get(pk=quote.pk)
+    for field in fresh._meta.concrete_fields:
+        setattr(quote, field.attname, getattr(fresh, field.attname))
+
+
+@transaction.atomic
+def send_quote(quote: Quote) -> Quote:
+    """Email the quote. Allowed from draft or sent (resend); refused once accepted or lost."""
+    from .emails import send_quote_email
+
+    _lock_fresh(quote)
+    if quote.status == Quote.Status.ACCEPTED:
+        raise ValueError("An accepted quote cannot be re-sent.")
+    if quote.status == Quote.Status.LOST:
+        raise ValueError("A lost quote cannot be sent.")
+    send_quote_email(quote)
+    quote.status = Quote.Status.SENT
+    quote.sent_at = timezone.now()
+    quote.save(update_fields=["status", "sent_at", "updated_at"])
     return quote

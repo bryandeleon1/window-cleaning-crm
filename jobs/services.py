@@ -30,6 +30,22 @@ def ensure_job_for_quote(quote: Quote) -> Job | None:
     return job
 
 
+TERMINAL = {Job.Status.COMPLETED, Job.Status.CANCELED}
+
+
+def _lock(job: Job) -> None:
+    fresh = Job.objects.select_for_update().get(pk=job.pk)
+    for field in fresh._meta.concrete_fields:
+        setattr(job, field.attname, getattr(fresh, field.attname))
+
+
+def _lock_open(job: Job) -> None:
+    _lock(job)
+    if job.status in TERMINAL:
+        raise ValueError(f"A {job.get_status_display().lower()} job cannot be changed.")
+
+
+@transaction.atomic
 def schedule_job(
     job: Job,
     *,
@@ -39,6 +55,7 @@ def schedule_job(
     note: str = "",
 ) -> Job:
     """Schedule or reschedule a job (morning/afternoon window, no clock time)."""
+    _lock_open(job)
     was_on_calendar = job.status in {
         Job.Status.SCHEDULED,
         Job.Status.WEATHER_HOLD,
@@ -52,20 +69,26 @@ def schedule_job(
         job.status = Job.Status.SCHEDULED
     if note:
         job.status_note = note
-    if job.status != Job.Status.COMPLETED:
-        job.completed_at = None
     job.save()
     return job
 
 
+@transaction.atomic
 def set_weather_hold(job: Job, note: str = "") -> Job:
+    _lock_open(job)
     job.status = Job.Status.WEATHER_HOLD
     job.status_note = note or job.status_note or "Weather hold"
     job.save(update_fields=["status", "status_note", "updated_at"])
     return job
 
 
+@transaction.atomic
 def complete_job(job: Job) -> Job:
+    _lock(job)
+    if job.status == Job.Status.COMPLETED:
+        return job  # idempotent: keep original completed_at
+    if job.status == Job.Status.CANCELED:
+        raise ValueError("A canceled job cannot be completed.")
     job.status = Job.Status.COMPLETED
     job.completed_at = timezone.now()
     job.save(update_fields=["status", "completed_at", "updated_at"])

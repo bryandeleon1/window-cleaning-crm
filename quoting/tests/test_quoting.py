@@ -14,6 +14,7 @@ from quoting.services import (
     build_quote_from_lead,
     ensure_default_rate_card,
     lose_quote,
+    send_quote,
 )
 
 User = get_user_model()
@@ -175,3 +176,66 @@ class QuoteOwnerUITests(TestCase):
         self.client.logout()
         response = self.client.get(reverse("clients:list"))
         self.assertEqual(response.status_code, 302)
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class QuoteTransitionGuardTests(TestCase):
+    def setUp(self):
+        card = ensure_default_rate_card()
+        self.lead = Lead.objects.create(
+            name="Guard Lead", email="guard@example.com", phone="555-010-8888",
+            address_line1="3 Lake St",
+        )
+        self.quote = build_quote_from_lead(
+            self.lead, [{"item": card.items.get(code="exterior"), "quantity": Decimal("10")}]
+        )
+
+    def test_resend_refreshes_sent_at(self):
+        send_quote(self.quote)
+        first = Quote.objects.get(pk=self.quote.pk).sent_at
+        send_quote(self.quote)
+        self.quote.refresh_from_db()
+        self.assertEqual(self.quote.status, Quote.Status.SENT)
+        self.assertGreater(self.quote.sent_at, first)
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_accept_twice_creates_one_customer_property_job(self):
+        accept_quote(self.quote)
+        accept_quote(Quote.objects.get(pk=self.quote.pk))
+        self.assertEqual(Customer.objects.count(), 1)
+        self.assertEqual(Property.objects.count(), 1)
+        self.assertEqual(Job.objects.filter(quote=self.quote).count(), 1)
+
+    def test_send_or_lose_accepted_quote_refused(self):
+        accept_quote(self.quote)
+        mail.outbox.clear()
+        with self.assertRaises(ValueError):
+            send_quote(self.quote)
+        with self.assertRaises(ValueError):
+            lose_quote(self.quote, "changed mind")
+        self.quote.refresh_from_db()
+        self.assertEqual(self.quote.status, Quote.Status.ACCEPTED)
+        self.assertEqual(Customer.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_lost_quote_cannot_be_accepted_or_sent(self):
+        lose_quote(self.quote, "too pricey")
+        with self.assertRaises(ValueError):
+            accept_quote(self.quote)
+        with self.assertRaises(ValueError):
+            send_quote(self.quote)
+        self.quote.refresh_from_db()
+        self.assertEqual(self.quote.status, Quote.Status.LOST)
+        self.assertEqual(Customer.objects.count(), 0)
+
+    def test_view_posts_on_accepted_quote(self):
+        User.objects.create_user(username="owner", password="test-pass-12345")
+        self.client.login(username="owner", password="test-pass-12345")
+        accept_quote(self.quote)
+        self.client.post(reverse("quoting:send", kwargs={"pk": self.quote.pk}))
+        self.client.post(reverse("quoting:lose", kwargs={"pk": self.quote.pk}), {"lost_reason": "x"})
+        self.client.post(reverse("quoting:accept", kwargs={"pk": self.quote.pk}))
+        self.quote.refresh_from_db()
+        self.assertEqual(self.quote.status, Quote.Status.ACCEPTED)
+        self.assertEqual(Customer.objects.count(), 1)
+        self.assertEqual(Job.objects.filter(quote=self.quote).count(), 1)
