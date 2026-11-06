@@ -1,6 +1,8 @@
 import io
+import struct
 import json
 import tempfile
+import zlib
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -17,6 +19,19 @@ def tiny_png(name="photo.png"):
     buf = io.BytesIO()
     Image.new("RGB", (2, 2), (30, 120, 200)).save(buf, format="PNG")
     return SimpleUploadedFile(name, buf.getvalue(), content_type="image/png")
+
+
+def large_dimension_png(name="big.png", width=10000, height=10000):
+    """Small PNG whose header declares dimensions over the pixel budget."""
+    def chunk(kind, data):
+        return (
+            struct.pack(">I", len(data)) + kind + data
+            + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(b"")) + chunk(b"IEND", b"")
+    return SimpleUploadedFile(name, data, content_type="image/png")
 
 
 SVG_BYTES = b'<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'
@@ -247,6 +262,12 @@ class LeadPhotoPrivacyTests(TestCase):
         ):
             response = self._post_quote(upload)
             self.assertEqual(response.status_code, 200)
+        self.assertFalse(Lead.objects.filter(name="Upload Lead").exists())
+
+    def test_public_form_rejects_oversized_declared_dimensions(self):
+        response = self._post_quote(large_dimension_png())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This photo is too large.")
         self.assertFalse(Lead.objects.filter(name="Upload Lead").exists())
 
     def test_public_form_accepts_small_image_owner_can_view(self):

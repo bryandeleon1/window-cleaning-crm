@@ -1,5 +1,7 @@
 import io
+import struct
 import tempfile
+import zlib
 from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -20,6 +22,19 @@ def tiny_png(name="photo.png"):
     buf = io.BytesIO()
     Image.new("RGB", (2, 2), (30, 120, 200)).save(buf, format="PNG")
     return SimpleUploadedFile(name, buf.getvalue(), content_type="image/png")
+
+
+def large_dimension_png(name="big.png", width=10000, height=10000):
+    """Small PNG whose header declares dimensions over the pixel budget."""
+    def chunk(kind, data):
+        return (
+            struct.pack(">I", len(data)) + kind + data
+            + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(b"")) + chunk(b"IEND", b"")
+    return SimpleUploadedFile(name, data, content_type="image/png")
 
 
 SVG_BYTES = b'<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'
@@ -153,6 +168,18 @@ class JobPhotoPrivacyTests(TestCase):
         ):
             self.client.post(url, {"image": upload, "caption": "bad"})
         self.assertFalse(JobPhoto.objects.filter(caption="bad").exists())
+
+    def test_upload_rejects_oversized_declared_dimensions(self):
+        self.client.login(username="jordan", password="test-pass-12345")
+        url = reverse("jobs:photo_upload", kwargs={"pk": self.job.pk})
+        self.client.post(url, {"image": large_dimension_png(), "caption": "big"})
+        self.assertFalse(JobPhoto.objects.filter(caption="big").exists())
+
+    def test_stored_oversized_photo_returns_404(self):
+        stored = JobPhoto.objects.create(job=self.job, image=large_dimension_png())
+        self.client.login(username="jordan", password="test-pass-12345")
+        url = reverse("jobs:photo", kwargs={"pk": self.job.pk, "photo_id": stored.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_upload_accepts_small_image(self):
         self.client.login(username="jordan", password="test-pass-12345")
