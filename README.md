@@ -2,7 +2,7 @@
 
 Portfolio Django **site-plus-CRM** for a solo residential window-cleaning business (fictional demo brand: Lakeside Pane Co.).
 
-This is a single-tenant Django monolith: a polished marketing site (later PRs) living alongside an owner CRM that covers the residential loop — leads → quotes → jobs → invoices → review ask → recurring offer. It is **not** a live customer site. A real owner site (Webflow/Squarespace or a real domain) should be able to replace the dummy marketing site later without rewriting the CRM.
+This is a single-tenant Django monolith: a polished marketing site living alongside an owner CRM that covers the residential loop — leads → quotes → jobs → invoices → review ask → recurring offer. It is **not** a live customer site. A real owner site (Webflow/Squarespace or a real domain) should be able to replace the dummy marketing site later without rewriting the CRM.
 
 ## Stack
 
@@ -15,21 +15,29 @@ This is a single-tenant Django monolith: a polished marketing site (later PRs) l
 
 | App | Role |
 |---|---|
-| `accounts` | Single owner authentication + owner home stub |
-| `marketing` | Dummy/portfolio public site (later) |
-| `leads` | Public quote form + phone-lead entry (later) |
+| `accounts` | Single owner authentication + owner home |
+| `marketing` | Dummy/portfolio public site (home, services, service area, about, gallery, FAQ, contact/quote) |
+| `leads` | Public quote form, phone-lead entry, owner list/detail, inbound webhook |
 | `clients` | Customer + property (later) |
 | `quoting` | Rate card + itemized quotes (later) |
 | `jobs` | Schedule / complete / photos (later) |
 | `billing` | Invoices + payment recording (later) |
 | `followup` | Review ask + recurring offer (later) |
-| `notifications` | Email path later; **SMS is a stub** today |
+| `notifications` | Email path used for leads; **SMS is a stub** |
 
 ## Stubs (explicit)
 
 - **Stripe:** placeholder fields only in later PRs — no SDK, no charges, no card vault.
 - **SMS:** `notifications.sms.send(to, body)` logs or no-ops. Email is the demo notification path.
-- **Live owner site:** marketing stays isolated; inbound webhook for a future Webflow/Squarespace form arrives in a later PR.
+- **Live owner site:** keep `marketing` isolated. A future Webflow/Squarespace form can `POST /integrations/leads/` with header `X-Leads-Webhook-Secret` (value from `LEADS_WEBHOOK_SECRET`).
+
+## Demo copy (static; not `seed_demo`)
+
+- Brand: Lakeside Pane Co.
+- Owner persona: Jordan Hale
+- Area: Cedar Falls, Waterloo & nearby ZIPs (Central Time)
+- Phone: (555) 010-2040
+- Gallery / owner images are labeled fictional SVG placeholders — not real people or customers.
 
 ## Local setup
 
@@ -46,11 +54,26 @@ python manage.py createsuperuser   # bootstrap owner login
 python manage.py runserver
 ```
 
+Public site:
+
+- Home: `/`
+- Quote form POST: `/quote/` (also linked from `/contact/` and `/quote/` pages)
+- Services / area / about / gallery / FAQ / contact: `/services/`, `/service-area/`, `/about/`, `/gallery/`, `/faq/`, `/contact/`
+
 Owner UI:
 
 - Login: `/login/`
-- Owner home stub: `/owner/`
+- Owner home: `/owner/`
+- Leads: `/owner/leads/`
+- Log phone lead: `/owner/leads/new/`
 - Django admin (bootstrap only): `/admin/`
+
+Inbound webhook (for a future live site):
+
+- `POST /integrations/leads/`
+- Header: `X-Leads-Webhook-Secret: <LEADS_WEBHOOK_SECRET>`
+- JSON body fields: `name` (required), `email`, `phone`, `address`/`address_line1`, `city`, `zip_code`, `service_interest`, `stories`, `window_pane_estimate`, `how_heard`, `message`
+- Lead photos are private: served only at `/owner/leads/<id>/photos/<photo_id>/` when logged in (not via public `/media/`).
 
 Pinned dependencies also live in `requirements.lock` (same pins as `requirements.txt` for this scaffold).
 
@@ -65,6 +88,6 @@ GitHub Actions runs the same checks against Postgres on every pull request.
 
 ## What this PR does / does not
 
-**PR 1 (this scaffold):** project package `config`, env-based settings, all nine apps installed, `accounts` login/logout + owner home, SMS stub, base HTMX-ready template, docker-compose Postgres, CI, README.
+**PR 2 (marketing + leads):** public marketing site, Lead model + owner UI, public quote form with owner/customer emails, phone-lead form, inbound webhook stub, service-area list + basic ZIP check.
 
-**Not in this PR:** `seed_demo`, marketing site, lead form, quotes, jobs, invoices, review-ask, recurring offer, Stripe, or production deploy.
+**Not in this PR:** `seed_demo`, quotes/rate card, clients/properties, jobs/photos, invoices, review-ask, recurring offer, Stripe, live SMS, or production deploy.

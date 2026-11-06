@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="800" viewBox="0 0 640 800" role="img" aria-label="Fictional placeholder owner portrait">
+  <rect width="640" height="800" fill="#d7e6f5"/>
+  <circle cx="320" cy="280" r="110" fill="#8fb3d9"/>
+  <rect x="170" y="420" width="300" height="260" rx="150" fill="#8fb3d9"/>
+  <rect x="40" y="40" width="560" height="64" rx="12" fill="#0b5fff"/>
+  <text x="320" y="82" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif" font-size="28" font-weight="700">PLACEHOLDER</text>
+  <text x="320" y="720" text-anchor="middle" fill="#1a1a1a" font-family="system-ui,sans-serif" font-size="26" font-weight="600">Jordan Hale (fictional)</text>
+  <text x="320" y="760" text-anchor="middle" fill="#5b6472" font-family="system-ui,sans-serif" font-size="18">Not a real person · demo art only</text>
+</svg>

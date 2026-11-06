@@ -1,0 +1,11 @@
+{% extends "marketing/base_public.html" %}
+{% block title %}FAQ · {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="hero"><h1>FAQ</h1></section>
+{% for item in faq_items %}
+<article class="card">
+  <h2>{{ item.q }}</h2>
+  <p>{{ item.a }}</p>
+</article>
+{% endfor %}
+{% endblock %}

@@ -28,6 +28,10 @@ jobs:
       SECRET_KEY: ci-secret-not-for-production
       ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://wccrm:wccrm@localhost:5432/wccrm
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+      DEFAULT_FROM_EMAIL: Lakeside Pane Co. <noreply@lakesidepane.example>
+      OWNER_NOTIFY_EMAIL: owner@lakesidepane.example
+      LEADS_WEBHOOK_SECRET: ci-webhook-secret-not-for-production
 
     steps:
       - uses: actions/checkout@v4

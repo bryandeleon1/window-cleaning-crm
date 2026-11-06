@@ -1,0 +1,21 @@
+{% extends "marketing/base_public.html" %}
+{% block title %}Services · {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="hero"><h1>Services</h1><p class="muted">Residential glass only. No solar. No high-rise / rope access.</p></section>
+<h2>Core</h2>
+<div class="grid three">
+  {% for s in core_services %}
+  <article class="grid-card"><h3>{{ s.title }}</h3><p class="muted">{{ s.blurb }}</p></article>
+  {% endfor %}
+</div>
+<h2>Add-ons</h2>
+<div class="grid two">
+  {% for s in addon_services %}
+  <article class="grid-card"><h3>{{ s.title }}</h3><p class="muted">{{ s.blurb }}</p></article>
+  {% endfor %}
+</div>
+<section class="card">
+  <h2>Not offered</h2>
+  <ul>{% for item in not_offered %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+{% endblock %}

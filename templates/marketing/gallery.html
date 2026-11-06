@@ -1,0 +1,17 @@
+{% extends "marketing/base_public.html" %}
+{% load static %}
+{% block title %}Gallery · {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Gallery</h1>
+  <p class="muted">Clearly labeled demo placeholders — not real customer properties and not photos of real people.</p>
+</section>
+<div class="grid two gallery">
+  {% for src in gallery_images %}
+  <figure class="grid-card">
+    <img src="{% static src %}" alt="Fictional gallery placeholder {{ forloop.counter }}">
+    <figcaption class="muted">Demo photo {{ forloop.counter }} · Lakeside Pane Co.</figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% endblock %}

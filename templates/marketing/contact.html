@@ -1,0 +1,21 @@
+{% extends "marketing/base_public.html" %}
+{% block title %}Contact / quote · {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Request a quote</h1>
+  <p class="muted">Prefer to talk? <a href="tel:{{ phone_tel }}">{{ phone_display }}</a>. Photos stay private in the CRM — they are not published on this site.</p>
+</section>
+<section class="card">
+  <form method="post" action="{% url 'public_quote' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+      {{ field.errors }}
+      {{ field }}
+      {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+    {% endfor %}
+    <button type="submit">Send quote request</button>
+  </form>
+</section>
+{% endblock %}

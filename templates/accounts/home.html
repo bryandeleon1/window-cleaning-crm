@@ -4,9 +4,11 @@
 {% block content %}
 <section class="card">
   <h1>Welcome{% if user.get_short_name %}, {{ user.get_short_name }}{% endif %}</h1>
-  <p class="muted">
-    Phone-simple owner home stub. Leads, quotes, jobs, and billing arrive in later PRs.
-  </p>
+  <p class="muted">Phone-simple owner home. Quotes, jobs, and billing arrive in later PRs.</p>
   <p>Signed in as <strong>{{ user.username }}</strong>.</p>
+  <p>
+    <a class="button" href="{% url 'leads:list' %}">Leads</a>
+    <a class="button" href="{% url 'leads:phone_create' %}" style="background:#142033">Log phone lead</a>
+  </p>
 </section>
 {% endblock %}
