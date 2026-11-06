@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Lakeside Pane Co.{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      line-height: 1.45;
+      background: #f7f8fa;
+      color: #1a1a1a;
+    }
+    header, main, footer { max-width: 40rem; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    a { color: #0b5fff; }
+    .card {
+      background: #fff;
+      border: 1px solid #e3e6eb;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+    }
+    label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid #c9ced6;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+    }
+    button, .button {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.7rem 1rem;
+      border: 0;
+      border-radius: 0.5rem;
+      background: #0b5fff;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .muted { color: #5b6472; }
+    .messages { list-style: none; padding: 0; }
+    .messages li { margin-bottom: 0.5rem; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <strong>{% block brand %}Owner CRM{% endblock %}</strong>
+    <nav>
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Log out</button>
+        </form>
+      {% endif %}
+    </nav>
+  </header>
+  <main>
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block extra_body %}{% endblock %}
+</body>
+</html>
