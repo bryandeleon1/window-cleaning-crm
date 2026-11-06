@@ -1,5 +1,7 @@
 from django import forms
 
+from notifications.images import validate_safe_image
+
 from .models import Lead
 
 
@@ -7,7 +9,8 @@ class PublicQuoteForm(forms.ModelForm):
     photos = forms.FileField(
         required=False,
         widget=forms.FileInput(attrs={"accept": "image/*"}),
-        help_text="Optional photo of the house or windows (stored privately).",
+        help_text="Optional JPEG, PNG, GIF, or WebP photo up to 5 MB (stored privately).",
+        validators=[validate_safe_image],
     )
 
     class Meta:

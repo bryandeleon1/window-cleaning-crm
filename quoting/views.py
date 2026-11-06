@@ -1,15 +1,19 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from leads.models import Lead
 
-from .emails import send_quote_email
 from .forms import BuildQuoteForm, QuoteLoseForm, RateCardItemForm, RateCardSettingsForm
 from .models import Quote, RateCardItem
-from .services import accept_quote, build_quote_from_lead, ensure_default_rate_card, lose_quote
+from .services import (
+    accept_quote,
+    build_quote_from_lead,
+    ensure_default_rate_card,
+    lose_quote,
+)
+from .services import send_quote as send_quote_service
 
 
 @login_required
@@ -79,13 +83,10 @@ def build_from_lead(request, lead_id):
 def send_quote(request, pk):
     quote = get_object_or_404(Quote, pk=pk)
     try:
-        send_quote_email(quote)
+        send_quote_service(quote)
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect("quoting:detail", pk=quote.pk)
-    quote.status = Quote.Status.SENT
-    quote.sent_at = timezone.now()
-    quote.save(update_fields=["status", "sent_at", "updated_at"])
     messages.success(request, "Quote emailed to the customer.")
     return redirect("quoting:detail", pk=quote.pk)
 
@@ -94,10 +95,11 @@ def send_quote(request, pk):
 @require_POST
 def accept(request, pk):
     quote = get_object_or_404(Quote, pk=pk)
-    if quote.status == Quote.Status.LOST:
-        messages.error(request, "A lost quote cannot be accepted.")
+    try:
+        accept_quote(quote)
+    except ValueError as exc:
+        messages.error(request, str(exc))
         return redirect("quoting:detail", pk=quote.pk)
-    accept_quote(quote)
     messages.success(
         request,
         "Quote accepted. Customer, property, and job created.",

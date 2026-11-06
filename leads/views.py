@@ -1,16 +1,16 @@
 import json
-import mimetypes
-from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import FileResponse, Http404, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from marketing import demo as marketing_demo
+
+from notifications.files import private_image_response
 
 from .emails import send_new_lead_emails
 from .forms import LeadStatusForm, PhoneLeadForm, PublicQuoteForm
@@ -114,13 +114,7 @@ def lead_detail(request, pk):
 def lead_photo(request, pk, photo_id):
     """Serve a lead photo only to the logged-in owner (never via public /media/)."""
     photo = get_object_or_404(LeadPhoto, pk=photo_id, lead_id=pk)
-    if not photo.image:
-        raise Http404("Photo missing.")
-    path = Path(photo.image.path)
-    if not path.is_file():
-        raise Http404("Photo file missing.")
-    content_type, _ = mimetypes.guess_type(str(path))
-    return FileResponse(path.open("rb"), content_type=content_type or "application/octet-stream")
+    return private_image_response(photo.image)
 
 
 @login_required

@@ -13,6 +13,7 @@
     <strong>Billing terms:</strong> {{ customer.billing_terms|default:"—" }}
   </p>
   {% if customer.notes %}<p>{{ customer.notes|linebreaksbr }}</p>{% endif %}
+  <p><a class="button" href="{% url 'clients:edit' customer.pk %}">Edit contact</a></p>
 </section>
 {% for prop in customer.properties.all %}
 <section class="card">
@@ -24,7 +25,10 @@
     Parking: {{ prop.access_parking|default:"—" }}
   </p>
   {% if prop.access_notes %}<p>{{ prop.access_notes|linebreaksbr }}</p>{% endif %}
-  <p><a class="button" href="{% url 'followup:plan_create' customer.pk prop.pk %}">Record recurring offer</a></p>
+  <p>
+    <a class="button" href="{% url 'clients:property_edit' customer.pk prop.pk %}">Edit property</a>
+    <a class="button" href="{% url 'followup:plan_create' customer.pk prop.pk %}">Record recurring offer</a>
+  </p>
 </section>
 {% empty %}
 <section class="card"><p class="muted">No property on file.</p></section>
