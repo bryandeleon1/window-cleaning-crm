@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Quote #{{ quote.pk }}{% endblock %}
+{% block brand %}Quote{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'quoting:list' %}">← Quotes</a></p>
+  <h1>Quote #{{ quote.pk }}</h1>
+  <p class="muted">{{ quote.get_status_display }} · created {{ quote.created_at }}</p>
+  <p>
+    <strong>Customer:</strong> {{ quote.customer_name|default:"—" }}
+    {% if quote.customer %}(<a href="{% url 'clients:detail' quote.customer.pk %}">CRM record</a>){% endif %}<br>
+    <strong>Email:</strong> {{ quote.customer_email|default:"—" }}<br>
+    <strong>Phone:</strong> {{ quote.customer_phone|default:"—" }}<br>
+    <strong>Address:</strong> {{ quote.service_address|default:"—" }}<br>
+    {% if quote.lead %}<strong>Lead:</strong> <a href="{% url 'leads:detail' quote.lead.pk %}">#{{ quote.lead.pk }} {{ quote.lead.name }}</a><br>{% endif %}
+    {% if quote.lost_reason %}<strong>Lost reason:</strong> {{ quote.lost_reason }}{% endif %}
+  </p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr><th align="left">Line</th><th align="right">Qty</th><th align="right">Price</th><th align="right">Total</th></tr></thead>
+    <tbody>
+    {% for line in quote.lines.all %}
+      <tr style="border-top:1px solid #e3e6eb">
+        <td>{{ line.description }}</td>
+        <td align="right">{{ line.quantity }}</td>
+        <td align="right">${{ line.unit_price }}</td>
+        <td align="right">${{ line.line_total }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p>
+    Subtotal: ${{ quote.subtotal }}<br>
+    Minimum charge: ${{ quote.minimum_charge }}<br>
+    <strong>Total: ${{ quote.total }}</strong>
+  </p>
+  {% if quote.status != "accepted" and quote.status != "lost" %}
+  <form method="post" action="{% url 'quoting:send' quote.pk %}" style="display:inline">{% csrf_token %}<button type="submit">Email quote</button></form>
+  <form method="post" action="{% url 'quoting:accept' quote.pk %}" style="display:inline">{% csrf_token %}<button type="submit">Accept</button></form>
+  {% endif %}
+</section>
+{% if quote.status != "accepted" and quote.status != "lost" %}
+<section class="card">
+  <h2>Mark lost</h2>
+  <form method="post" action="{% url 'quoting:lose' quote.pk %}">
+    {% csrf_token %}
+    <label for="{{ lose_form.lost_reason.id_for_label }}">Reason</label>
+    {{ lose_form.lost_reason }}
+    <button type="submit" style="background:#8a1f1f">Lose quote</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

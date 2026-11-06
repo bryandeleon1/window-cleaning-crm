@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Quotes{% endblock %}
+{% block brand %}Quotes{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Quotes</h1>
+  <p>
+    <a class="button" href="{% url 'quoting:rate_card' %}">Rate card</a>
+    <a class="button" href="{% url 'accounts:home' %}" style="background:#5b6472">Owner home</a>
+  </p>
+  {% if quotes %}
+  <ul style="list-style:none;padding:0;margin:1rem 0 0">
+    {% for q in quotes %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.85rem 0">
+      <a href="{% url 'quoting:detail' q.pk %}"><strong>Quote #{{ q.pk }}</strong> — {{ q.customer_name|default:"(no name)" }}</a>
+      <div class="muted">{{ q.get_status_display }} · ${{ q.total }} · {{ q.created_at }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No quotes yet. Open a lead and tap Build quote.</p>
+  {% endif %}
+</section>
+{% endblock %}

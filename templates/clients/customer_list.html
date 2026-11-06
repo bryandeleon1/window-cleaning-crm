@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block brand %}Customers{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Customers</h1>
+  <p class="muted">Created when a quote is accepted. One property per customer in MVP.</p>
+  <p><a class="button" href="{% url 'accounts:home' %}" style="background:#5b6472">Owner home</a></p>
+  {% if customers %}
+  <ul style="list-style:none;padding:0;margin:1rem 0 0">
+    {% for c in customers %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.85rem 0">
+      <a href="{% url 'clients:detail' c.pk %}"><strong>{{ c.name }}</strong></a>
+      <div class="muted">{{ c.phone|default:c.email|default:"—" }} · {{ c.properties.count }} propert{{ c.properties.count|pluralize:"y,ies" }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No customers yet. Accept a quote to create one.</p>
+  {% endif %}
+</section>
+{% endblock %}

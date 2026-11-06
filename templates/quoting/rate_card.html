@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Rate card{% endblock %}
+{% block brand %}Rate card{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'quoting:list' %}">← Quotes</a></p>
+  <h1>{{ card.name }} rate card</h1>
+  <p class="muted">Fictional starter prices for the demo. Edit anytime — no solar or high-rise rows.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="settings">
+    <label for="{{ settings_form.minimum_charge.id_for_label }}">Minimum charge</label>
+    {{ settings_form.minimum_charge.errors }}
+    {{ settings_form.minimum_charge }}
+    <button type="submit">Save minimum</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Line items</h2>
+  <ul style="list-style:none;padding:0">
+    {% for item in items %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.75rem 0">
+      <a href="{% url 'quoting:rate_card_item_edit' item.pk %}"><strong>{{ item.name }}</strong></a>
+      <div class="muted">{{ item.get_unit_display }} · ${{ item.unit_price }} · {% if item.is_active %}active{% else %}inactive{% endif %}{% if item.is_addon %} · add-on{% endif %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Build quote{% endblock %}
+{% block brand %}Build quote{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'leads:detail' lead.pk %}">← Lead</a></p>
+  <h1>Quote for {{ lead.name }}</h1>
+  <p class="muted">Pick quantities from the rate card. Total is max(subtotal, minimum ${{ card.minimum_charge }}).</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {% if field.name != "notes" %}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field.errors }}
+        {{ field }}
+      {% endif %}
+    {% endfor %}
+    <label for="{{ form.notes.id_for_label }}">Notes</label>
+    {{ form.notes.errors }}
+    {{ form.notes }}
+    <button type="submit">Create draft quote</button>
+  </form>
+</section>
+{% endblock %}

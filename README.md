@@ -18,8 +18,8 @@ This is a single-tenant Django monolith: a polished marketing site living alongs
 | `accounts` | Single owner authentication + owner home |
 | `marketing` | Dummy/portfolio public site (home, services, service area, about, gallery, FAQ, contact/quote) |
 | `leads` | Public quote form, phone-lead entry, owner list/detail, inbound webhook |
-| `clients` | Customer + property (later) |
-| `quoting` | Rate card + itemized quotes (later) |
+| `clients` | Customer + one Property / service address; access notes; nullable commercial future-proof fields |
+| `quoting` | Editable rate card + itemized quotes; send / accept / lose |
 | `jobs` | Schedule / complete / photos (later) |
 | `billing` | Invoices + payment recording (later) |
 | `followup` | Review ask + recurring offer (later) |
@@ -86,8 +86,16 @@ python manage.py test
 
 GitHub Actions runs the same checks against Postgres on every pull request.
 
+## Owner CRM (PR 3)
+
+- Customers: `/owner/clients/`
+- Quotes: `/owner/quotes/`
+- Rate card: `/owner/quotes/rate-card/`
+- Build a quote from a lead: `/owner/quotes/from-lead/<lead_id>/`
+- Accept creates Customer + one Property and marks the lead won (Job scheduling is a later PR)
+
 ## What this PR does / does not
 
-**PR 2 (marketing + leads):** public marketing site, Lead model + owner UI, public quote form with owner/customer emails, phone-lead form, inbound webhook stub, service-area list + basic ZIP check.
+**PR 3 (clients + quoting):** Customer + Property, editable rate card with fictional starter prices, itemized Quote/QuoteLine from a lead, email quote, accept (customer+property, lead won), lose (reason). No Job yet.
 
-**Not in this PR:** `seed_demo`, quotes/rate card, clients/properties, jobs/photos, invoices, review-ask, recurring offer, Stripe, live SMS, or production deploy.
+**Not in this PR:** jobs/photos, invoices, review-ask, recurring offer, Stripe, live SMS, `seed_demo`, or production deploy.

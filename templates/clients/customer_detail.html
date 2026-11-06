@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block brand %}Customer{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'clients:list' %}">← Customers</a></p>
+  <h1>{{ customer.name }}</h1>
+  <p>
+    <strong>Phone:</strong> {{ customer.phone|default:"—" }}<br>
+    <strong>Email:</strong> {{ customer.email|default:"—" }}<br>
+    <strong>Type:</strong> {{ customer.customer_type|default:"—" }}<br>
+    <strong>Requires COI:</strong> {% if customer.requires_coi is None %}—{% else %}{{ customer.requires_coi|yesno:"Yes,No" }}{% endif %}<br>
+    <strong>Billing terms:</strong> {{ customer.billing_terms|default:"—" }}
+  </p>
+  {% if customer.notes %}<p>{{ customer.notes|linebreaksbr }}</p>{% endif %}
+</section>
+{% for prop in customer.properties.all %}
+<section class="card">
+  <h2>{{ prop.label|default:"Service address" }}</h2>
+  <p>{{ prop.address_line1 }}{% if prop.city %}, {{ prop.city }}{% endif %} {{ prop.zip_code }}</p>
+  <p class="muted">
+    Pets: {{ prop.access_pets|default:"—" }}<br>
+    Alarms: {{ prop.access_alarms|default:"—" }}<br>
+    Parking: {{ prop.access_parking|default:"—" }}
+  </p>
+  {% if prop.access_notes %}<p>{{ prop.access_notes|linebreaksbr }}</p>{% endif %}
+</section>
+{% empty %}
+<section class="card"><p class="muted">No property on file.</p></section>
+{% endfor %}
+{% endblock %}

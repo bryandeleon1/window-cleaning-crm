@@ -1,3 +1,19 @@
-from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, render
 
-# Create your views here.
+from .models import Customer
+
+
+@login_required
+def customer_list(request):
+    customers = Customer.objects.prefetch_related("properties").all()
+    return render(request, "clients/customer_list.html", {"customers": customers})
+
+
+@login_required
+def customer_detail(request, pk):
+    customer = get_object_or_404(
+        Customer.objects.prefetch_related("properties"),
+        pk=pk,
+    )
+    return render(request, "clients/customer_detail.html", {"customer": customer})
