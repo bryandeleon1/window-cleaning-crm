@@ -6,6 +6,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from clients.models import Customer, Property
+from jobs.models import Job
 from leads.models import Lead
 from quoting.models import Quote, QuoteLine, RateCardItem
 from quoting.services import (
@@ -106,6 +107,10 @@ class QuoteLifecycleTests(TestCase):
         self.assertEqual(prop.address_line1, "200 Lake St")
         self.assertEqual(prop.customer_id, customer.pk)
         self.assertEqual(self.lead.status, Lead.Status.WON)
+        self.assertTrue(Job.objects.filter(quote=quote).exists())
+        job = Job.objects.get(quote=quote)
+        self.assertEqual(job.customer_id, quote.customer_id)
+        self.assertEqual(job.property_id, quote.property_id)
 
     def test_lose_stores_a_reason(self):
         quote = build_quote_from_lead(

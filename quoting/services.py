@@ -1,4 +1,4 @@
-"""Rate-card defaults and quote lifecycle helpers (no Job creation — that is PR 4)."""
+"""Rate-card defaults and quote lifecycle helpers (accept also creates a Job)."""
 
 from __future__ import annotations
 
@@ -96,8 +96,11 @@ def build_quote_from_lead(lead: Lead, line_specs: list[dict]) -> Quote:
 
 @transaction.atomic
 def accept_quote(quote: Quote) -> Quote:
-    """Accept a quote: create Customer + one Property, mark lead won. No Job (PR 4)."""
+    """Accept a quote: create Customer + one Property + Job, mark lead won."""
     if quote.status == Quote.Status.ACCEPTED:
+        from jobs.services import ensure_job_for_quote
+
+        ensure_job_for_quote(quote)
         return quote
 
     lead = quote.lead
@@ -140,6 +143,9 @@ def accept_quote(quote: Quote) -> Quote:
         lead.lost_reason = ""
         lead.save(update_fields=["status", "lost_reason", "updated_at"])
 
+    from jobs.services import ensure_job_for_quote
+
+    ensure_job_for_quote(quote)
     return quote
 
 

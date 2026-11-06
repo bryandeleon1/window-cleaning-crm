@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Jobs{% endblock %}
+{% block brand %}Jobs{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Jobs</h1>
+  <p class="muted">Schedule, weather-hold, complete, and private photos.</p>
+  <p><a class="button" href="{% url 'accounts:home' %}" style="background:#5b6472">Owner home</a></p>
+  <p>
+    <a href="{% url 'jobs:list' %}">All</a>
+    {% for value,label in statuses %}
+      · <a href="?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </p>
+  {% if jobs %}
+  <ul style="list-style:none;padding:0;margin:1rem 0 0">
+    {% for job in jobs %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.85rem 0">
+      <a href="{% url 'jobs:detail' job.pk %}"><strong>Job #{{ job.pk }}</strong> — {{ job.customer.name }}</a>
+      <div class="muted">{{ job.get_status_display }}{% if job.scheduled_date %} · {{ job.scheduled_date }} {{ job.get_time_window_display }}{% endif %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No jobs yet. Accept a quote to create one.</p>
+  {% endif %}
+</section>
+{% endblock %}
