@@ -72,7 +72,8 @@ Inbound webhook (for a future live site):
 
 - `POST /integrations/leads/`
 - Header: `X-Leads-Webhook-Secret: <LEADS_WEBHOOK_SECRET>`
-- JSON body fields: `name` (required), `email`, `phone`, `address`/`address_line1`, `city`, `zip_code`, `service_interest`, `message`
+- JSON body fields: `name` (required), `email`, `phone`, `address`/`address_line1`, `city`, `zip_code`, `service_interest`, `stories`, `window_pane_estimate`, `how_heard`, `message`
+- Lead photos are private: served only at `/owner/leads/<id>/photos/<photo_id>/` when logged in (not via public `/media/`).
 
 Pinned dependencies also live in `requirements.lock` (same pins as `requirements.txt` for this scaffold).
 

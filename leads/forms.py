@@ -6,7 +6,7 @@ from .models import Lead
 class PublicQuoteForm(forms.ModelForm):
     photos = forms.FileField(
         required=False,
-        widget=forms.ClearableFileInput(attrs={"accept": "image/*"}),
+        widget=forms.FileInput(attrs={"accept": "image/*"}),
         help_text="Optional photo of the house or windows (stored privately).",
     )
 
@@ -20,6 +20,9 @@ class PublicQuoteForm(forms.ModelForm):
             "city",
             "zip_code",
             "service_interest",
+            "stories",
+            "window_pane_estimate",
+            "how_heard",
             "message",
         ]
         widgets = {
@@ -29,6 +32,8 @@ class PublicQuoteForm(forms.ModelForm):
             "address_line1": forms.TextInput(attrs={"autocomplete": "street-address"}),
             "city": forms.TextInput(attrs={"autocomplete": "address-level2"}),
             "zip_code": forms.TextInput(attrs={"autocomplete": "postal-code"}),
+            "stories": forms.NumberInput(attrs={"min": 1, "max": 10}),
+            "window_pane_estimate": forms.NumberInput(attrs={"min": 1}),
             "message": forms.Textarea(attrs={"rows": 4}),
         }
 
@@ -36,6 +41,9 @@ class PublicQuoteForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["email"].required = True
         self.fields["phone"].required = True
+        self.fields["stories"].required = False
+        self.fields["window_pane_estimate"].required = False
+        self.fields["how_heard"].required = False
 
 
 class PhoneLeadForm(forms.ModelForm):
@@ -49,10 +57,15 @@ class PhoneLeadForm(forms.ModelForm):
             "city",
             "zip_code",
             "service_interest",
+            "stories",
+            "window_pane_estimate",
+            "how_heard",
             "message",
             "owner_notes",
         ]
         widgets = {
+            "stories": forms.NumberInput(attrs={"min": 1, "max": 10}),
+            "window_pane_estimate": forms.NumberInput(attrs={"min": 1}),
             "message": forms.Textarea(attrs={"rows": 3}),
             "owner_notes": forms.Textarea(attrs={"rows": 3}),
         }
@@ -60,6 +73,9 @@ class PhoneLeadForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["phone"].required = True
+        # Keep the phone form small: extra estimate fields stay optional.
+        for name in ("stories", "window_pane_estimate", "how_heard", "email"):
+            self.fields[name].required = False
 
 
 class LeadStatusForm(forms.ModelForm):

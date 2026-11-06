@@ -1,11 +1,14 @@
 import json
+import tempfile
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from leads.models import Lead
+from leads.models import Lead, LeadPhoto
 
 User = get_user_model()
 
@@ -28,6 +31,9 @@ class PublicQuoteFormTests(TestCase):
                 "city": "Cedar Falls",
                 "zip_code": "50613",
                 "service_interest": Lead.ServiceInterest.BOTH,
+                "stories": "2",
+                "window_pane_estimate": "22",
+                "how_heard": Lead.HeardAbout.GOOGLE,
                 "message": "Two-story exterior please",
             },
         )
@@ -37,6 +43,9 @@ class PublicQuoteFormTests(TestCase):
         self.assertEqual(lead.source, Lead.Source.WEB_FORM)
         self.assertEqual(lead.status, Lead.Status.NEW)
         self.assertEqual(lead.zip_code, "50613")
+        self.assertEqual(lead.stories, 2)
+        self.assertEqual(lead.window_pane_estimate, 22)
+        self.assertEqual(lead.how_heard, Lead.HeardAbout.GOOGLE)
         self.assertEqual(len(mail.outbox), 2)
         subjects = {m.subject for m in mail.outbox}
         self.assertIn("New lead: Alex Neighbor", subjects)
@@ -80,6 +89,9 @@ class WebhookTests(TestCase):
                     "email": "wf@example.com",
                     "phone": "555-010-1111",
                     "zip_code": "50701",
+                    "stories": 1,
+                    "window_pane_estimate": 12,
+                    "how_heard": "referral",
                     "message": "From future live site",
                 }
             ),
@@ -92,6 +104,9 @@ class WebhookTests(TestCase):
         lead = Lead.objects.get()
         self.assertEqual(lead.name, "Webflow Lead")
         self.assertEqual(lead.source, Lead.Source.WEBHOOK)
+        self.assertEqual(lead.stories, 1)
+        self.assertEqual(lead.window_pane_estimate, 12)
+        self.assertEqual(lead.how_heard, Lead.HeardAbout.REFERRAL)
         self.assertTrue(payload["zip_in_service_area"])
 
 
@@ -115,6 +130,9 @@ class OwnerPhoneLeadTests(TestCase):
                 "city": "Waterloo",
                 "zip_code": "50703",
                 "service_interest": Lead.ServiceInterest.EXTERIOR,
+                "stories": "",
+                "window_pane_estimate": "",
+                "how_heard": "",
                 "message": "Called about screens",
                 "owner_notes": "Prefers mornings",
             },
@@ -124,6 +142,8 @@ class OwnerPhoneLeadTests(TestCase):
         self.assertEqual(lead.source, Lead.Source.PHONE)
         self.assertEqual(lead.phone, "555-010-2222")
         self.assertEqual(lead.status, Lead.Status.NEW)
+        self.assertIsNone(lead.stories)
+        self.assertEqual(lead.how_heard, "")
 
     def test_owner_can_change_status_including_lost_reason(self):
         lead = Lead.objects.create(
@@ -139,6 +159,59 @@ class OwnerPhoneLeadTests(TestCase):
         lead.refresh_from_db()
         self.assertEqual(lead.status, Lead.Status.LOST)
         self.assertEqual(lead.lost_reason, "Too far")
+
+    def test_owner_detail_shows_quote_estimate_fields(self):
+        lead = Lead.objects.create(
+            name="Estimate Lead",
+            phone="555-010-4444",
+            stories=2,
+            window_pane_estimate=18,
+            how_heard=Lead.HeardAbout.NEXTDOOR,
+        )
+        response = self.client.get(reverse("leads:detail", kwargs={"pk": lead.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Stories")
+        self.assertContains(response, "Window/pane estimate")
+        self.assertContains(response, "18")
+        self.assertContains(response, "Nextdoor")
+
+
+class LeadPhotoPrivacyTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="jordan", password="test-pass-12345")
+        self._tmpdir = tempfile.TemporaryDirectory(prefix="wccrm-media-")
+        self.addCleanup(self._tmpdir.cleanup)
+        self.settings_override = override_settings(
+            MEDIA_ROOT=self._tmpdir.name,
+            DEBUG=True,
+        )
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+
+        self.lead = Lead.objects.create(name="Photo Lead", phone="555-010-5555")
+        upload = SimpleUploadedFile(
+            "house.png",
+            b"\x89PNG\r\n\x1a\n" + b"fake-image-bytes",
+            content_type="image/png",
+        )
+        self.photo = LeadPhoto.objects.create(lead=self.lead, image=upload)
+
+    def test_unauthenticated_cannot_fetch_lead_photo(self):
+        url = reverse("leads:photo", kwargs={"pk": self.lead.pk, "photo_id": self.photo.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response["Location"])
+
+    def test_authenticated_owner_can_fetch_lead_photo(self):
+        self.client.login(username="jordan", password="test-pass-12345")
+        url = reverse("leads:photo", kwargs={"pk": self.lead.pk, "photo_id": self.photo.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_public_media_url_does_not_serve_lead_photo(self):
+        media_url = f"/media/{self.photo.image.name}"
+        response = self.client.get(media_url)
+        self.assertEqual(response.status_code, 404)
 
 
 class MarketingPagesTests(TestCase):

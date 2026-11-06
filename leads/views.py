@@ -1,12 +1,14 @@
 import json
+import mimetypes
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import FileResponse, Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from marketing import demo as marketing_demo
 
@@ -38,6 +40,23 @@ def _save_optional_photo(lead: Lead, uploaded) -> None:
     if not uploaded:
         return
     LeadPhoto.objects.create(lead=lead, image=uploaded)
+
+
+def _optional_int(value):
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_how_heard(value: str) -> str:
+    raw = (value or "").strip()
+    valid = {c.value for c in Lead.HeardAbout}
+    if raw in valid:
+        return raw
+    return ""
 
 
 @require_http_methods(["GET", "POST"])
@@ -91,6 +110,20 @@ def lead_detail(request, pk):
 
 
 @login_required
+@require_GET
+def lead_photo(request, pk, photo_id):
+    """Serve a lead photo only to the logged-in owner (never via public /media/)."""
+    photo = get_object_or_404(LeadPhoto, pk=photo_id, lead_id=pk)
+    if not photo.image:
+        raise Http404("Photo missing.")
+    path = Path(photo.image.path)
+    if not path.is_file():
+        raise Http404("Photo file missing.")
+    content_type, _ = mimetypes.guess_type(str(path))
+    return FileResponse(path.open("rb"), content_type=content_type or "application/octet-stream")
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def phone_lead_create(request):
     if request.method == "POST":
@@ -139,6 +172,10 @@ def inbound_webhook(request):
         interest = Lead.ServiceInterest.UNSURE
 
     zip_code = normalize_zip(payload.get("zip_code") or payload.get("zip") or "")
+    window_estimate = payload.get("window_pane_estimate")
+    if window_estimate is None:
+        window_estimate = payload.get("window_count") or payload.get("pane_estimate")
+
     lead = Lead.objects.create(
         name=name,
         email=(payload.get("email") or "").strip(),
@@ -147,6 +184,11 @@ def inbound_webhook(request):
         city=(payload.get("city") or "").strip(),
         zip_code=zip_code,
         service_interest=interest,
+        stories=_optional_int(payload.get("stories")),
+        window_pane_estimate=_optional_int(window_estimate),
+        how_heard=_optional_how_heard(
+            payload.get("how_heard") or payload.get("heard_about") or ""
+        ),
         message=(payload.get("message") or "").strip(),
         source=Lead.Source.WEBHOOK,
         status=Lead.Status.NEW,

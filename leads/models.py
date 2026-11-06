@@ -23,6 +23,15 @@ class Lead(models.Model):
         BOTH = "both", "Interior + exterior"
         UNSURE = "unsure", "Not sure yet"
 
+    class HeardAbout(models.TextChoices):
+        GOOGLE = "google", "Google"
+        REFERRAL = "referral", "Referral"
+        NEXTDOOR = "nextdoor", "Nextdoor"
+        INSTAGRAM = "instagram", "Instagram"
+        ANGI_THUMBTACK = "angi_thumbtack", "Angi / Thumbtack"
+        YARD_SIGN = "yard_sign", "Yard sign"
+        OTHER = "other", "Other"
+
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -51,6 +60,23 @@ class Lead(models.Model):
         max_length=20,
         choices=ServiceInterest.choices,
         default=ServiceInterest.UNSURE,
+    )
+    stories = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Approximate number of stories.",
+    )
+    window_pane_estimate = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Approximate window or pane count.",
+        verbose_name="window/pane estimate",
+    )
+    how_heard = models.CharField(
+        max_length=32,
+        choices=HeardAbout.choices,
+        blank=True,
+        verbose_name="how they heard",
     )
     message = models.TextField(blank=True)
     owner_notes = models.TextField(blank=True)

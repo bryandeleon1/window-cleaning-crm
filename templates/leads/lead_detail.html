@@ -10,12 +10,22 @@
     <strong>Phone:</strong> {{ lead.phone|default:"—" }}<br>
     <strong>Email:</strong> {{ lead.email|default:"—" }}<br>
     <strong>Address:</strong> {{ lead.address_line1|default:"—" }}{% if lead.city %}, {{ lead.city }}{% endif %} {{ lead.zip_code }}<br>
-    <strong>Interest:</strong> {{ lead.get_service_interest_display }}
+    <strong>Interest:</strong> {{ lead.get_service_interest_display }}<br>
+    <strong>Stories:</strong> {{ lead.stories|default:"—" }}<br>
+    <strong>Window/pane estimate:</strong> {{ lead.window_pane_estimate|default:"—" }}<br>
+    <strong>How they heard:</strong> {% if lead.how_heard %}{{ lead.get_how_heard_display }}{% else %}—{% endif %}
   </p>
   {% if lead.message %}<p><strong>Message</strong><br>{{ lead.message|linebreaksbr }}</p>{% endif %}
   {% if lead.photos.all %}
   <p><strong>Private photos</strong> (owner only — not on public site)</p>
-  <ul>{% for photo in lead.photos.all %}<li>{{ photo.image.name }}</li>{% endfor %}</ul>
+  <ul>
+    {% for photo in lead.photos.all %}
+      <li>
+        <a href="{% url 'leads:photo' lead.pk photo.pk %}">View photo {{ forloop.counter }}</a>
+        <span class="muted">({{ photo.image.name }})</span>
+      </li>
+    {% endfor %}
+  </ul>
   {% endif %}
 </section>
 <section class="card">
