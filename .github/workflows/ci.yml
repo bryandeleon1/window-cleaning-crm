@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: wccrm
+          POSTGRES_USER: wccrm
+          POSTGRES_PASSWORD: wccrm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wccrm -d wccrm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DEBUG: "True"
+      SECRET_KEY: ci-secret-not-for-production
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://wccrm:wccrm@localhost:5432/wccrm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django checks and tests
+        run: |
+          python manage.py check
+          python manage.py test --verbosity=2

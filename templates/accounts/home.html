@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Owner home{% endblock %}
+{% block brand %}Owner home{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Welcome{% if user.get_short_name %}, {{ user.get_short_name }}{% endif %}</h1>
+  <p class="muted">
+    Phone-simple owner home stub. Leads, quotes, jobs, and billing arrive in later PRs.
+  </p>
+  <p>Signed in as <strong>{{ user.username }}</strong>.</p>
+</section>
+{% endblock %}
