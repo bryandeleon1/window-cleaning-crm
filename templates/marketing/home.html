@@ -1,0 +1,25 @@
+{% extends "marketing/base_public.html" %}
+{% block title %}{{ brand_name }} · Residential window cleaning{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="badge">Cedar Falls · Waterloo · nearby</p>
+  <h1>Clear glass. Local owner. Easy quote.</h1>
+  <p class="muted">{{ brand_name }} is a fictional portfolio demo for a solo residential window cleaner. Call or send photos — we confirm every job (no instant book).</p>
+  <p>
+    <a class="button" href="tel:{{ phone_tel }}">Call {{ phone_display }}</a>
+    <a class="button" href="{% url 'marketing:contact' %}" style="background:#142033;margin-left:0.5rem">Request a quote</a>
+  </p>
+</section>
+<section class="grid two">
+  <article class="grid-card">
+    <h2>What we clean</h2>
+    <p>Exterior, interior, or both — plus screens, tracks/sills, hard-water, skylights, storms, and post-construction.</p>
+    <a href="{% url 'marketing:services' %}">See services</a>
+  </article>
+  <article class="grid-card">
+    <h2>Who shows up</h2>
+    <p>{{ owner_name }} — named owner, service-area focused, phone in the header on every page.</p>
+    <a href="{% url 'marketing:about' %}">About {{ owner_name }}</a>
+  </article>
+</section>
+{% endblock %}

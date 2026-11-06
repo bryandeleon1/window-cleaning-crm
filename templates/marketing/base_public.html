@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <link rel="stylesheet" href="{% static 'marketing/site.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="public-site">
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="{% url 'marketing:home' %}">{{ brand_name }}</a>
+      <a class="phone" href="tel:{{ phone_tel }}">{{ phone_display }}</a>
+    </div>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="{% url 'marketing:services' %}">Services</a>
+      <a href="{% url 'marketing:service_area' %}">Service area</a>
+      <a href="{% url 'marketing:about' %}">About</a>
+      <a href="{% url 'marketing:gallery' %}">Gallery</a>
+      <a href="{% url 'marketing:faq' %}">FAQ</a>
+      <a class="nav-cta" href="{% url 'marketing:contact' %}">Get a quote</a>
+    </nav>
+  </header>
+  <main class="site-main">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p><strong>{{ brand_name }}</strong> · {{ owner_name }} · {{ phone_display }}</p>
+    <p class="muted">Cedar Falls, Waterloo &amp; nearby · {{ time_zone_label|default:"Central Time" }} · Portfolio demo site (not a live customer business)</p>
+  </footer>
+</body>
+</html>

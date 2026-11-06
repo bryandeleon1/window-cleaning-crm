@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Leads{% endblock %}
+{% block brand %}Leads{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Leads</h1>
+  <p class="muted">Phone-simple list. Tap a lead to update status.</p>
+  <p>
+    <a class="button" href="{% url 'leads:phone_create' %}">Log phone lead</a>
+    <a class="button" href="{% url 'accounts:home' %}" style="background:#5b6472">Owner home</a>
+  </p>
+  <p>
+    <a href="{% url 'leads:list' %}">All</a>
+    {% for value,label in statuses %}
+      · <a href="?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </p>
+  {% if leads %}
+  <ul style="list-style:none;padding:0;margin:1rem 0 0">
+    {% for lead in leads %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.85rem 0">
+      <a href="{% url 'leads:detail' lead.pk %}"><strong>{{ lead.name }}</strong></a>
+      <div class="muted">{{ lead.get_status_display }} · {{ lead.get_source_display }} · {{ lead.phone|default:lead.email }} · {{ lead.created_at }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No leads yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

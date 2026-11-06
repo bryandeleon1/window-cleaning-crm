@@ -98,3 +98,14 @@ EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
 )
+
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="Lakeside Pane Co. <noreply@lakesidepane.example>",
+)
+OWNER_NOTIFY_EMAIL = env("OWNER_NOTIFY_EMAIL", default="owner@lakesidepane.example")
+LEADS_WEBHOOK_SECRET = env("LEADS_WEBHOOK_SECRET", default="")

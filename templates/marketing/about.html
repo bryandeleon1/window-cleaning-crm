@@ -1,0 +1,16 @@
+{% extends "marketing/base_public.html" %}
+{% load static %}
+{% block title %}About · {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="hero"><h1>About {{ owner_name }}</h1></section>
+<section class="grid two">
+  <div>
+    <img class="about-photo" src="{% static 'marketing/img/owner-placeholder.svg' %}" alt="Fictional placeholder portrait labeled Jordan Hale — not a real person">
+  </div>
+  <article class="card">
+    <p>{{ owner_name }} is the fictional owner persona for this portfolio CRM demo. In a live business, this page would introduce the real person who shows up at the door.</p>
+    <p class="muted">Phone: <a href="tel:{{ phone_tel }}">{{ phone_display }}</a><br>Area: Cedar Falls, Waterloo &amp; nearby · Central Time</p>
+    <a class="button" href="{% url 'marketing:contact' %}">Request a quote</a>
+  </article>
+</section>
+{% endblock %}

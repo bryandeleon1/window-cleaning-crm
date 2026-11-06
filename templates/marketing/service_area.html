@@ -1,0 +1,15 @@
+{% extends "marketing/base_public.html" %}
+{% block title %}Service area · {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Service area</h1>
+  <p class="muted">{{ brand_name }} covers {% for c in service_area_cities %}{{ c }}{% if not forloop.last %} and {% endif %}{% endfor %} plus nearby ZIPs ({{ time_zone_label }}).</p>
+</section>
+<section class="card">
+  <h2>Cities</h2>
+  <ul>{% for c in service_area_cities %}<li>{{ c }}</li>{% endfor %}</ul>
+  <h2>Nearby ZIPs we check against</h2>
+  <p>{% for z in service_area_zips %}<span class="badge" style="margin:0.15rem">{{ z }}</span> {% endfor %}</p>
+  <p class="help">This is a simple list for the demo site and inbound lead sanity checks — not a routing product.</p>
+</section>
+{% endblock %}
