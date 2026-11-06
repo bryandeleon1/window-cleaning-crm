@@ -21,7 +21,7 @@ This is a single-tenant Django monolith: a polished marketing site living alongs
 | `clients` | Customer + one Property / service address; access notes; nullable commercial future-proof fields |
 | `quoting` | Editable rate card + itemized quotes; send / accept / lose |
 | `jobs` | Schedule / weather hold / complete / private photos |
-| `billing` | Invoices + payment recording (later) |
+| `billing` | Invoices from jobs + cash/check/Venmo/other; Stripe URL placeholder |
 | `followup` | Review ask + recurring offer (later) |
 | `notifications` | Email path used for leads; **SMS is a stub** |
 
@@ -94,9 +94,10 @@ GitHub Actions runs the same checks against Postgres on every pull request.
 - Build a quote from a lead: `/owner/quotes/from-lead/<lead_id>/`
 - Accept creates Customer + one Property + Job and marks the lead won
 - Jobs: `/owner/jobs/`
+- Invoices: `/owner/invoices/`
 
 ## What this PR does / does not
 
-**PR 4 (jobs + photos):** Job on quote accept; schedule (date + morning/afternoon); weather hold / reschedule statuses; complete with timestamp; private photos with optional `use_in_gallery` flag (no auto-publish).
+**PR 5 (invoices + payments):** Invoice/InvoiceLine from a job's quote (snapshotted totals); Payment (cash/check/Venmo/other) with provider/external_id stubs; nullable `hosted_payment_url` placeholder (no Stripe SDK/charges).
 
-**Not in this PR:** invoices, review-ask, recurring offer, Stripe, live SMS, `seed_demo`, weather API, or production deploy.
+**Not in this PR:** Stripe SDK/charges/webhooks, review-ask, recurring offer, live SMS, `seed_demo`, or production deploy.

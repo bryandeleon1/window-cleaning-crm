@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block brand %}Invoices{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Invoices</h1>
+  <p class="muted">Generated from jobs. Record cash / check / Venmo / other — no card numbers stored.</p>
+  <p><a class="button" href="{% url 'accounts:home' %}" style="background:#5b6472">Owner home</a></p>
+  <p>
+    <a href="{% url 'billing:list' %}">All</a>
+    {% for value,label in statuses %}
+      · <a href="?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </p>
+  {% if invoices %}
+  <ul style="list-style:none;padding:0;margin:1rem 0 0">
+    {% for inv in invoices %}
+    <li style="border-top:1px solid #e3e6eb;padding:0.85rem 0">
+      <a href="{% url 'billing:detail' inv.pk %}"><strong>Invoice #{{ inv.pk }}</strong> — {{ inv.customer.name }}</a>
+      <div class="muted">{{ inv.get_status_display }} · ${{ inv.total }} · job #{{ inv.job_id }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No invoices yet. Open a job and generate one.</p>
+  {% endif %}
+</section>
+{% endblock %}

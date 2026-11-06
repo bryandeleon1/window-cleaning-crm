@@ -4,12 +4,13 @@
 {% block content %}
 <section class="card">
   <h1>Welcome{% if user.get_short_name %}, {{ user.get_short_name }}{% endif %}</h1>
-  <p class="muted">Phone-simple owner home. Invoices and follow-up arrive in later PRs.</p>
+  <p class="muted">Phone-simple owner home. Review-ask and recurring offer arrive in a later PR.</p>
   <p>Signed in as <strong>{{ user.username }}</strong>.</p>
   <p>
     <a class="button" href="{% url 'leads:list' %}">Leads</a>
     <a class="button" href="{% url 'quoting:list' %}">Quotes</a>
     <a class="button" href="{% url 'jobs:list' %}">Jobs</a>
+    <a class="button" href="{% url 'billing:list' %}">Invoices</a>
     <a class="button" href="{% url 'clients:list' %}">Customers</a>
   </p>
   <p>

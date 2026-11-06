@@ -15,6 +15,18 @@
   </p>
 </section>
 
+<section class="card">
+  <h2>Invoice</h2>
+  {% if invoice %}
+  <p><a class="button" href="{% url 'billing:detail' invoice.pk %}">Open invoice #{{ invoice.pk }}</a></p>
+  {% else %}
+  <form method="post" action="{% url 'billing:generate_from_job' job.pk %}">
+    {% csrf_token %}
+    <button type="submit">Generate invoice from quote</button>
+  </form>
+  {% endif %}
+</section>
+
 {% if job.status != "completed" and job.status != "canceled" %}
 <section class="card">
   <h2>Schedule / reschedule</h2>
