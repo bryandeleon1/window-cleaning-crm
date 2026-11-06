@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Invoice #{{ invoice.pk }}{% endblock %}
+{% block brand %}Invoice{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'billing:list' %}">← Invoices</a></p>
+  <h1>Invoice #{{ invoice.pk }}</h1>
+  <p class="muted">{{ invoice.get_status_display }} · created {{ invoice.created_at }}{% if invoice.paid_at %} · paid {{ invoice.paid_at }}{% endif %}</p>
+  <p>
+    <strong>Customer:</strong> <a href="{% url 'clients:detail' invoice.customer.pk %}">{{ invoice.customer.name }}</a><br>
+    <strong>Property:</strong> {{ invoice.property.address_line1 }}{% if invoice.property.city %}, {{ invoice.property.city }}{% endif %}<br>
+    <strong>Job:</strong> <a href="{% url 'jobs:detail' invoice.job.pk %}">#{{ invoice.job.pk }}</a>
+  </p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr><th align="left">Line</th><th align="right">Qty</th><th align="right">Price</th><th align="right">Total</th></tr></thead>
+    <tbody>
+    {% for line in invoice.lines.all %}
+      <tr style="border-top:1px solid #e3e6eb">
+        <td>{{ line.description }}</td>
+        <td align="right">{{ line.quantity }}</td>
+        <td align="right">${{ line.unit_price }}</td>
+        <td align="right">${{ line.line_total }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p>
+    Subtotal: ${{ invoice.subtotal }}<br>
+    Minimum charge (snapshot): ${{ invoice.minimum_charge }}<br>
+    <strong>Total: ${{ invoice.total }}</strong><br>
+    Paid: ${{ invoice.amount_paid }} · Balance: ${{ invoice.balance_due }}
+  </p>
+</section>
+
+<section class="card">
+  <h2>Record payment</h2>
+  <p class="muted">Cash, check, Venmo, or other. No card numbers — ever.</p>
+  <form method="post" action="{% url 'billing:payment_create' invoice.pk %}">
+    {% csrf_token %}
+    {% for field in payment_form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field.errors }}
+      {{ field }}
+      {% if field.help_text %}<p class="muted">{{ field.help_text }}</p>{% endif %}
+    {% endfor %}
+    <button type="submit">Record payment</button>
+  </form>
+  {% if invoice.payments.all %}
+  <h3>Payments</h3>
+  <ul>
+    {% for p in invoice.payments.all %}
+      <li>${{ p.amount }} · {{ p.get_method_display }} · {{ p.recorded_at }}{% if p.note %} — {{ p.note }}{% endif %}{% if p.provider %} · {{ p.provider }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Stripe Payment Link placeholder</h2>
+  <p class="muted">Optional URL for a future Stripe Payment Link or hosted invoice. Saving does <strong>not</strong> charge a card or call Stripe.</p>
+  <form method="post" action="{% url 'billing:hosted_url_save' invoice.pk %}">
+    {% csrf_token %}
+    {% for field in url_form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field.errors }}
+      {{ field }}
+      {% if field.help_text %}<p class="muted">{{ field.help_text }}</p>{% endif %}
+    {% endfor %}
+    <button type="submit">Save URL</button>
+  </form>
+  {% if invoice.hosted_payment_url %}
+  <p>Current: <a href="{{ invoice.hosted_payment_url }}" rel="noopener noreferrer">{{ invoice.hosted_payment_url }}</a></p>
+  {% endif %}
+</section>
+{% endblock %}

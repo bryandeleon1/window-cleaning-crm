@@ -31,11 +31,15 @@ def job_detail(request, pk):
         Job.objects.select_related("customer", "property", "quote").prefetch_related("photos"),
         pk=pk,
     )
+    from billing.models import Invoice
+
+    invoice = Invoice.objects.filter(job=job).first()
     return render(
         request,
         "jobs/job_detail.html",
         {
             "job": job,
+            "invoice": invoice,
             "schedule_form": ScheduleJobForm(
                 initial={
                     "scheduled_date": job.scheduled_date,
