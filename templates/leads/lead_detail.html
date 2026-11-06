@@ -16,6 +16,10 @@
     <strong>How they heard:</strong> {% if lead.how_heard %}{{ lead.get_how_heard_display }}{% else %}—{% endif %}
   </p>
   {% if lead.message %}<p><strong>Message</strong><br>{{ lead.message|linebreaksbr }}</p>{% endif %}
+  <p>
+    <a class="button" href="{% url 'quoting:build_from_lead' lead.pk %}">Build quote</a>
+  </p>
+
   {% if lead.photos.all %}
   <p><strong>Private photos</strong> (owner only — not on public site)</p>
   <ul>

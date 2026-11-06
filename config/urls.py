@@ -9,6 +9,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("accounts.urls")),
     path("owner/leads/", include("leads.urls")),
+    path("owner/clients/", include("clients.urls")),
+    path("owner/quotes/", include("quoting.urls")),
     path("quote/", lead_views.public_quote, name="public_quote"),
     path("integrations/leads/", lead_views.inbound_webhook, name="leads_webhook"),
     path("", include("marketing.urls")),

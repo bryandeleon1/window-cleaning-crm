@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ item.name }}{% endblock %}
+{% block brand %}Rate item{% endblock %}
+{% block content %}
+<section class="card">
+  <p><a href="{% url 'quoting:rate_card' %}">← Rate card</a></p>
+  <h1>{{ item.name }}</h1>
+  <p class="muted">Code: {{ item.code }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field.errors }}
+      {{ field }}
+    {% endfor %}
+    <button type="submit">Save</button>
+  </form>
+</section>
+{% endblock %}
