@@ -15,5 +15,20 @@ services:
       timeout: 5s
       retries: 10
 
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://wccrm:wccrm@db:5432/wccrm
+    depends_on:
+      db:
+        condition: service_healthy
+    # Example one-shot bootstrap (run manually when needed):
+    # docker compose run --rm web python manage.py migrate
+    # docker compose run --rm web python manage.py seed_demo
+
 volumes:
   wccrm_pgdata:
