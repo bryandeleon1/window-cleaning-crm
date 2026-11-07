@@ -1,3 +1,6 @@
+"""Customers and their service property. The app keeps one property per customer.
+"""
+
 from django.db import models
 from django.utils import timezone
 

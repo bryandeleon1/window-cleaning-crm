@@ -1,3 +1,7 @@
+"""Public marketing pages for the fictional Lakeside Pane Co. demo. Static copy only;
+the quote request form posts to leads.views.public_quote.
+"""
+
 from django.views.generic import TemplateView
 
 from leads.forms import PublicQuoteForm

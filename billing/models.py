@@ -1,3 +1,7 @@
+"""Invoices and recorded payments. Payment is invoice-only; any Stripe link is a
+placeholder URL and nothing is charged by this app.
+"""
+
 from decimal import Decimal
 import builtins
 

@@ -1,4 +1,9 @@
-"""Job helpers: create from accepted quote, schedule, weather hold, complete."""
+"""Job status rules.
+
+An accepted quote becomes one job. The owner schedules it for a morning or
+afternoon window, can put it on weather hold, reschedule, and mark it complete.
+Completed and canceled are final; completing twice keeps the first timestamp.
+"""
 
 from __future__ import annotations
 

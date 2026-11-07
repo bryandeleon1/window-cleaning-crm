@@ -1,3 +1,9 @@
+"""Lead = a quote request from a prospective customer (web form, phone, or webhook).
+
+Leads are requests, not bookings; the owner confirms work by accepting a quote.
+Lead photos are private and served only to the logged-in owner.
+"""
+
 from django.db import models
 from django.utils import timezone
 

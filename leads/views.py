@@ -1,3 +1,9 @@
+"""Lead screens and intake endpoints.
+
+Views here only handle HTTP: forms, redirects, messages, status codes.
+The rules for creating a lead live in leads/services.py.
+"""
+
 import json
 
 from django.conf import settings
@@ -12,10 +18,9 @@ from marketing import demo as marketing_demo
 
 from notifications.files import private_image_response
 
-from .emails import send_new_lead_emails
 from .forms import LeadStatusForm, PhoneLeadForm, PublicQuoteForm
 from .models import Lead, LeadPhoto
-from .service_area import normalize_zip, zip_in_service_area
+from .services import create_lead_from_webhook_payload, create_phone_lead, create_web_form_lead
 
 
 def _marketing_context(**extra):
@@ -36,42 +41,13 @@ def _marketing_context(**extra):
     return ctx
 
 
-def _save_optional_photo(lead: Lead, uploaded) -> None:
-    if not uploaded:
-        return
-    LeadPhoto.objects.create(lead=lead, image=uploaded)
-
-
-def _optional_int(value):
-    if value is None or value == "":
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _optional_how_heard(value: str) -> str:
-    raw = (value or "").strip()
-    valid = {c.value for c in Lead.HeardAbout}
-    if raw in valid:
-        return raw
-    return ""
-
-
 @require_http_methods(["GET", "POST"])
 def public_quote(request):
     """Public quote/contact form — creates a lead and emails owner + customer."""
     if request.method == "POST":
         form = PublicQuoteForm(request.POST, request.FILES)
         if form.is_valid():
-            lead = form.save(commit=False)
-            lead.source = Lead.Source.WEB_FORM
-            lead.status = Lead.Status.NEW
-            lead.zip_code = normalize_zip(lead.zip_code)
-            lead.save()
-            _save_optional_photo(lead, form.cleaned_data.get("photos"))
-            send_new_lead_emails(lead)
+            create_web_form_lead(form.save(commit=False), form.cleaned_data.get("photos"))
             messages.success(
                 request,
                 "Thanks — we got your request and will follow up soon.",
@@ -120,15 +96,11 @@ def lead_photo(request, pk, photo_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def phone_lead_create(request):
+    """Owner logs a lead taken over the phone."""
     if request.method == "POST":
         form = PhoneLeadForm(request.POST)
         if form.is_valid():
-            lead = form.save(commit=False)
-            lead.source = Lead.Source.PHONE
-            lead.status = Lead.Status.NEW
-            lead.zip_code = normalize_zip(lead.zip_code)
-            lead.save()
-            send_new_lead_emails(lead)
+            lead = create_phone_lead(form.save(commit=False))
             messages.success(request, "Phone lead logged.")
             return redirect("leads:detail", pk=lead.pk)
     else:
@@ -160,35 +132,7 @@ def inbound_webhook(request):
     if not name:
         return JsonResponse({"ok": False, "error": "name is required"}, status=400)
 
-    interest = payload.get("service_interest") or Lead.ServiceInterest.UNSURE
-    valid_interests = {c.value for c in Lead.ServiceInterest}
-    if interest not in valid_interests:
-        interest = Lead.ServiceInterest.UNSURE
-
-    zip_code = normalize_zip(payload.get("zip_code") or payload.get("zip") or "")
-    window_estimate = payload.get("window_pane_estimate")
-    if window_estimate is None:
-        window_estimate = payload.get("window_count") or payload.get("pane_estimate")
-
-    lead = Lead.objects.create(
-        name=name,
-        email=(payload.get("email") or "").strip(),
-        phone=(payload.get("phone") or "").strip(),
-        address_line1=(payload.get("address_line1") or payload.get("address") or "").strip(),
-        city=(payload.get("city") or "").strip(),
-        zip_code=zip_code,
-        service_interest=interest,
-        stories=_optional_int(payload.get("stories")),
-        window_pane_estimate=_optional_int(window_estimate),
-        how_heard=_optional_how_heard(
-            payload.get("how_heard") or payload.get("heard_about") or ""
-        ),
-        message=(payload.get("message") or "").strip(),
-        source=Lead.Source.WEBHOOK,
-        status=Lead.Status.NEW,
-    )
-    in_area = zip_in_service_area(zip_code) if zip_code else None
-    send_new_lead_emails(lead)
+    lead, in_area = create_lead_from_webhook_payload(payload)
     return JsonResponse(
         {
             "ok": True,

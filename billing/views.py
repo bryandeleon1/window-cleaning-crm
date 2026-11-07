@@ -1,3 +1,8 @@
+"""Invoice screens. Payments are invoice-only: the owner records cash, check, or
+card payments taken elsewhere. The Stripe link is a placeholder URL; this app
+never charges a card. Rules live in billing/services.py.
+"""
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -49,6 +54,7 @@ def invoice_detail(request, pk):
 @login_required
 @require_POST
 def generate_from_job(request, job_id):
+    """Create (or reopen) the single invoice for a job from its accepted quote."""
     job = get_object_or_404(Job, pk=job_id)
     invoice = generate_invoice_for_job(job)
     messages.success(request, f"Invoice #{invoice.pk} ready.")
@@ -58,6 +64,7 @@ def generate_from_job(request, job_id):
 @login_required
 @require_POST
 def payment_create(request, pk):
+    """Record a payment the owner already received; this app does not charge cards."""
     invoice = get_object_or_404(Invoice, pk=pk)
     form = RecordPaymentForm(request.POST)
     if not form.is_valid():
@@ -82,6 +89,7 @@ def payment_create(request, pk):
 @login_required
 @require_POST
 def hosted_url_save(request, pk):
+    """Save a placeholder hosted payment link (e.g. Stripe); nothing is charged."""
     invoice = get_object_or_404(Invoice, pk=pk)
     form = HostedPaymentUrlForm(request.POST, instance=invoice)
     if form.is_valid():

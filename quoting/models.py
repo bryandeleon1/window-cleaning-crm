@@ -1,3 +1,6 @@
+"""Rate card (the owner's price list) and quotes built from it for a lead.
+"""
+
 from decimal import Decimal
 
 from django.db import models

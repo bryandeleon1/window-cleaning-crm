@@ -1,3 +1,6 @@
+"""Jobs are the booked work created when a quote is accepted, plus private job photos.
+"""
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone

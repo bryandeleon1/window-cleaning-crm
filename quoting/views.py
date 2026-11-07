@@ -1,3 +1,8 @@
+"""Quote screens: build an itemized quote from a lead, send it, then record the
+outcome. Customers request quotes; nothing is booked until the owner marks the
+quote accepted. Status rules live in quoting/services.py.
+"""
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,6 +17,7 @@ from .services import (
     build_quote_from_lead,
     ensure_default_rate_card,
     lose_quote,
+    suggested_line_quantities_from_lead,
 )
 from .services import send_quote as send_quote_service
 
@@ -42,6 +48,7 @@ def quote_detail(request, pk):
 @login_required
 @require_http_methods(["GET", "POST"])
 def build_from_lead(request, lead_id):
+    """Build a draft quote for a lead from the rate card, prefilled from their estimate."""
     lead = get_object_or_404(Lead, pk=lead_id)
     card = ensure_default_rate_card()
     items = list(card.items.filter(is_active=True))
@@ -55,21 +62,11 @@ def build_from_lead(request, lead_id):
             messages.success(request, f"Draft quote #{quote.pk} created.")
             return redirect("quoting:detail", pk=quote.pk)
     else:
-        initial = {}
-        # Prefill a sensible qty from the lead window/pane estimate for matching core service.
-        estimate = lead.window_pane_estimate or 0
-        interest = lead.service_interest
-        code_map = {
-            Lead.ServiceInterest.EXTERIOR: "exterior",
-            Lead.ServiceInterest.INTERIOR: "interior",
-            Lead.ServiceInterest.BOTH: "both",
+        # Prefill the matching service line from the customer's window estimate.
+        initial = {
+            f"qty_{item_pk}": qty
+            for item_pk, qty in suggested_line_quantities_from_lead(lead, items).items()
         }
-        pref_code = code_map.get(interest)
-        if pref_code and estimate:
-            for item in items:
-                if item.code == pref_code:
-                    initial[f"qty_{item.pk}"] = estimate
-                    break
         form = BuildQuoteForm(items=items, initial=initial)
     return render(
         request,
@@ -81,6 +78,7 @@ def build_from_lead(request, lead_id):
 @login_required
 @require_POST
 def send_quote(request, pk):
+    """Email the quote; send/resend is allowed only while draft or sent."""
     quote = get_object_or_404(Quote, pk=pk)
     try:
         send_quote_service(quote)
@@ -94,6 +92,7 @@ def send_quote(request, pk):
 @login_required
 @require_POST
 def accept(request, pk):
+    """Owner confirms the work: creates customer, property, and job (once)."""
     quote = get_object_or_404(Quote, pk=pk)
     try:
         accept_quote(quote)
@@ -110,6 +109,7 @@ def accept(request, pk):
 @login_required
 @require_POST
 def lose(request, pk):
+    """Record why a quote was lost (reason required) so the owner can learn from it."""
     quote = get_object_or_404(Quote, pk=pk)
     form = QuoteLoseForm(request.POST)
     if not form.is_valid():
