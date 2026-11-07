@@ -4,6 +4,7 @@ Views here only handle HTTP: forms, redirects, messages, status codes.
 The rules for creating a lead live in leads/services.py.
 """
 
+import hmac
 import json
 
 from django.conf import settings
@@ -113,9 +114,16 @@ def _webhook_secret_ok(request) -> bool:
     if not expected:
         return False
     provided = request.headers.get("X-Leads-Webhook-Secret", "")
-    return provided == expected
+    if not isinstance(provided, str) or not provided:
+        return False
+    # Constant-time compare so the secret cannot be guessed from response timing.
+    return hmac.compare_digest(provided.encode("utf-8"), str(expected).encode("utf-8"))
 
 
+# csrf_exempt is intentional: this is a machine-to-machine POST with no browser
+# cookie. The shared-secret header stands in for CSRF, and an empty secret fails
+# closed so a missing env var never leaves the endpoint open. No extra rate limit
+# here or on the public quote form (single-owner demo).
 @csrf_exempt
 @require_POST
 def inbound_webhook(request):

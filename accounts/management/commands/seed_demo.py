@@ -30,6 +30,8 @@ from quoting.services import (
     ensure_default_rate_card,
 )
 
+# Known fictional demo login for the portfolio walkthrough (value documented in README).
+# Change it before any real deployment.
 DEMO_OWNER_USERNAME = "jordan"
 DEMO_OWNER_PASSWORD = "demo-pass-12345"
 DEMO_OWNER_EMAIL = "jordan@lakesidepane.example"

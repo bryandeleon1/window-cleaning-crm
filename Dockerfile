@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Collectstatic needs env vars; use safe placeholders at build time.
+# The build-time SECRET_KEY exists only for collectstatic; runtime must override it via env / .env.
 ENV DEBUG=False \
     SECRET_KEY=build-time-only-not-for-runtime \
     ALLOWED_HOSTS=localhost \

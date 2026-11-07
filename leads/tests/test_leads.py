@@ -92,6 +92,17 @@ class WebhookTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Lead.objects.count(), 0)
 
+    @override_settings(LEADS_WEBHOOK_SECRET="")
+    def test_webhook_rejects_when_secret_unset_even_with_header(self):
+        response = self.client.post(
+            reverse("leads_webhook"),
+            data=json.dumps({"name": "Unset Secret"}),
+            content_type="application/json",
+            headers={"X-Leads-Webhook-Secret": "anything"},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Lead.objects.count(), 0)
+
     def test_webhook_rejects_bad_secret(self):
         response = self.client.post(
             reverse("leads_webhook"),

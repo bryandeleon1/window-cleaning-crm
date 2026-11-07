@@ -50,6 +50,8 @@ class Invoice(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
 
     # Stripe Payment Link / hosted-invoice placeholder only — never charged by this app.
+    # URLField already requires http(s); no domain allowlist because Stripe Payment Link
+    # domains vary. Only the logged-in owner pastes it, and saving charges no one.
     hosted_payment_url = models.URLField(
         blank=True,
         help_text="Optional future Stripe Payment Link or hosted invoice URL. Placeholder only — saving does not charge.",

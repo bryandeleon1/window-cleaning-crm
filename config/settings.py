@@ -13,6 +13,12 @@ env = environ.Env(
 
 environ.Env.read_env(BASE_DIR / ".env")
 
+# The insecure default key only lets local runs boot without a .env; any deployment
+# must set a real SECRET_KEY via env. DEBUG defaults to False.
+# SESSION_COOKIE_SECURE / CSRF_COOKIE_SECURE / SECURE_SSL_REDIRECT stay unset on
+# purpose: this demo runs on local HTTP (including Docker on port 8000) and those
+# would break that. No rate limits, 2FA, or CSP: this is a single-owner portfolio
+# demo, not a live multi-user host.
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-change-me")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")

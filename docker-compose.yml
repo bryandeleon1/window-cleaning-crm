@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    # Demo defaults for laptop use only, not for a public host.
     environment:
       POSTGRES_DB: wccrm
       POSTGRES_USER: wccrm

@@ -19,3 +19,5 @@ urlpatterns = [
     path("", include("marketing.urls")),
 ]
 # Lead/job photos are login-required — never public /media/.
+# /admin/ stays enabled as Django's built-in tool; the product UI is login-only /owner/.
+# Single-tenant: any logged-in owner can see all records (no per-object ACLs).
