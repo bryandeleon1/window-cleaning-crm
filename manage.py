@@ -5,6 +5,8 @@ import sys
 
 
 def main():
+    # Command-line entry point: only picks settings and hands off to Django.
+    # No business rules live here.
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:

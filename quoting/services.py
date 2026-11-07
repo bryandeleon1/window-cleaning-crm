@@ -1,4 +1,10 @@
-"""Rate-card defaults and quote lifecycle helpers (accept also creates a Job)."""
+"""Rate-card defaults and quote lifecycle rules.
+
+A quote is an itemized price the owner builds from the rate card for a lead.
+It moves draft -> sent -> accepted (or lost). Accepting is the owner's
+confirmation that the work is booked: it creates the customer, their one
+service property, and a job to schedule. Accepted and lost are final.
+"""
 
 from __future__ import annotations
 
@@ -198,3 +204,29 @@ def send_quote(quote: Quote) -> Quote:
     quote.sent_at = timezone.now()
     quote.save(update_fields=["status", "sent_at", "updated_at"])
     return quote
+
+
+# Which rate-card line a lead's service interest maps to when prefilling a quote.
+_INTEREST_TO_RATE_CODE = {
+    Lead.ServiceInterest.EXTERIOR: "exterior",
+    Lead.ServiceInterest.INTERIOR: "interior",
+    Lead.ServiceInterest.BOTH: "both",
+}
+
+
+def suggested_line_quantities_from_lead(lead: Lead, items) -> dict[int, int]:
+    """Suggest a starting quantity for the quote builder.
+
+    Uses the customer's own window/pane estimate on the matching core service
+    line (exterior, interior, or both). Returns {rate_card_item_pk: qty};
+    empty when the lead has no estimate or an "unsure" interest. The owner
+    can still change every number before saving.
+    """
+    estimate = lead.window_pane_estimate or 0
+    pref_code = _INTEREST_TO_RATE_CODE.get(lead.service_interest)
+    if not (pref_code and estimate):
+        return {}
+    for item in items:
+        if item.code == pref_code:
+            return {item.pk: estimate}
+    return {}

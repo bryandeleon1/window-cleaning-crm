@@ -1,4 +1,10 @@
-"""Load a full fictional residential demo loop (idempotent)."""
+"""Load a full fictional residential demo loop (idempotent).
+
+Paints a walkthrough for the fictional Lakeside Pane Co.: an owner login, a
+web lead whose quote is accepted -> job completed -> invoice with a recorded
+payment -> review ask -> recurring offer, plus a job on weather hold and extra
+new and lost leads. Safe to re-run; existing demo records are reused.
+"""
 
 from __future__ import annotations
 
@@ -51,6 +57,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        # Entry point only: each step below is its own named helper.
         self.verbosity = options.get("verbosity", 1)
         owner = self._ensure_owner()
         card = ensure_default_rate_card()

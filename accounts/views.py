@@ -1,3 +1,6 @@
+"""Owner sign-in/out and the owner home screen. Every owner screen is login-only.
+"""
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import render

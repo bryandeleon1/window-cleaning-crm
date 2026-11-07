@@ -1,3 +1,8 @@
+"""Customer screens. Each customer has one service property (no multi-property
+workflow). The owner can update contact details and that property's address
+and access notes; customer type, COI, and billing terms are read-only here.
+"""
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -32,6 +37,7 @@ def customer_detail(request, pk):
 @login_required
 @require_http_methods(["GET", "POST"])
 def customer_edit(request, pk):
+    """Owner updates the customer's contact details and notes."""
     customer = get_object_or_404(Customer, pk=pk)
     form = CustomerContactForm(request.POST or None, instance=customer)
     if request.method == "POST" and form.is_valid():
@@ -48,6 +54,7 @@ def customer_edit(request, pk):
 @login_required
 @require_http_methods(["GET", "POST"])
 def property_edit(request, pk, property_pk):
+    """Owner updates the customer's single property: address and access notes."""
     customer = get_object_or_404(Customer, pk=pk)
     prop = get_object_or_404(Property, pk=property_pk, customer=customer)
     form = PropertyEditForm(request.POST or None, instance=prop)

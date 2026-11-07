@@ -1,3 +1,9 @@
+"""After-the-job follow-up screens: the review ask and the recurring offer.
+
+A recurring offer is a note of an agreed schedule and discount, not automatic
+billing. Rules live in followup/services.py.
+"""
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,6 +31,7 @@ def followup_home(request):
 @login_required
 @require_POST
 def send_review_ask(request, job_id):
+    """Email the customer a review link; only allowed after the job is completed."""
     job = get_object_or_404(Job.objects.select_related("customer"), pk=job_id)
     try:
         rr = send_review_request_for_job(job)
@@ -38,6 +45,7 @@ def send_review_ask(request, job_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def recurring_plan_create(request, customer_id, property_id):
+    """Record a recurring offer for the customer's property (not auto-billing)."""
     customer = get_object_or_404(Customer, pk=customer_id)
     prop = get_object_or_404(Property, pk=property_id, customer=customer)
     if request.method == "POST":

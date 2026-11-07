@@ -1,3 +1,8 @@
+"""Job screens: the owner schedules, pauses for weather, completes, and adds private photos.
+
+Views only handle forms, redirects, and messages; the status rules live in jobs/services.py.
+"""
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -64,6 +69,7 @@ def job_detail(request, pk):
 @login_required
 @require_POST
 def job_schedule(request, pk):
+    """Put the job on the calendar (or move it); a completed/canceled job is refused."""
     job = get_object_or_404(Job, pk=pk)
     form = ScheduleJobForm(request.POST)
     if not form.is_valid():
@@ -87,6 +93,7 @@ def job_schedule(request, pk):
 @login_required
 @require_POST
 def job_weather_hold(request, pk):
+    """Pause the job for weather; the owner reschedules once conditions clear."""
     job = get_object_or_404(Job, pk=pk)
     form = WeatherHoldForm(request.POST)
     note = form.cleaned_data.get("note") if form.is_valid() else "Weather hold"
@@ -102,6 +109,7 @@ def job_weather_hold(request, pk):
 @login_required
 @require_POST
 def job_complete(request, pk):
+    """Mark the work done; this unlocks the invoice and the review ask."""
     job = get_object_or_404(Job, pk=pk)
     try:
         complete_job(job)
@@ -115,6 +123,7 @@ def job_complete(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def job_photo_upload(request, pk):
+    """Attach a private before/after photo (validated image, owner-only)."""
     job = get_object_or_404(Job, pk=pk)
     form = JobPhotoUploadForm(request.POST, request.FILES)
     if form.is_valid():

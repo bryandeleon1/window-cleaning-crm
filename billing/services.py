@@ -1,4 +1,9 @@
-"""Invoice generation and payment recording (no Stripe SDK / charges)."""
+"""Invoice generation and payment recording.
+
+An invoice copies the accepted quote's lines for a job. Payments are recorded
+by the owner after they happen; there is no Stripe SDK and nothing is charged.
+The hosted payment URL is only a placeholder link the owner can paste.
+"""
 
 from __future__ import annotations
 

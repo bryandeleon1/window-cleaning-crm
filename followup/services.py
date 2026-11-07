@@ -1,4 +1,6 @@
-"""Follow-up helpers: review-ask email + recurring offer recording."""
+"""Follow-up rules: ask for a review once a job is completed, and record a
+recurring offer (schedule + optional discount). Offers never auto-bill.
+"""
 
 from __future__ import annotations
 
