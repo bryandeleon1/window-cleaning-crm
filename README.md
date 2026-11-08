@@ -14,7 +14,7 @@ It is **not** a live customer site. A real owner site (Webflow/Squarespace or a 
 
 - Django 5.x / Python 3.12
 - Postgres
-- Server-rendered templates + a little HTMX
+- Server-rendered templates
 - Gunicorn + WhiteNoise for a generic production process
 - Single owner login (phone-simple owner UI; Django admin may exist for bootstrap only)
 
