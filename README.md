@@ -180,6 +180,8 @@ docker compose run --rm web python manage.py migrate
 docker compose run --rm web python manage.py seed_demo
 ```
 
+Uploaded and seeded photos are stored in the `wccrm_media` Compose volume (mounted at `/app/media`), so they survive recreating the web container.
+
 ## What PR 7 does / does not
 
 **PR 7 (last planned slice):** `seed_demo`, README polish for the full loop, generic Dockerfile/compose/`gunicorn`+WhiteNoise deploy config. Demo URL: not hosted yet.

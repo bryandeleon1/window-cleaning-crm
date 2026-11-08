@@ -8,10 +8,12 @@ new and lost leads. Safe to re-run; existing demo records are reused.
 
 from __future__ import annotations
 
+import io
 from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -20,9 +22,10 @@ from billing.models import Invoice, Payment
 from billing.services import generate_invoice_for_job, record_payment
 from followup.models import RecurringPlan, ReviewRequest
 from followup.services import send_review_request_for_job, upsert_recurring_plan
-from jobs.models import Job
+from jobs.models import Job, JobPhoto
 from jobs.services import complete_job, schedule_job, set_weather_hold
-from leads.models import Lead
+from leads.models import Lead, LeadPhoto
+from PIL import Image, ImageDraw
 from quoting.models import Quote
 from quoting.services import (
     accept_quote,
@@ -199,6 +202,16 @@ class Command(BaseCommand):
             )
             self._log("Created biannual recurring plan")
 
+        self._ensure_lead_photo(lead, "Lakeside Pane Co. - front windows (before)")
+        self._ensure_job_photo(job, "Lakeside Pane Co. - front windows (after)")
+        self._fill_access_notes(
+            job.property,
+            pets="Friendly golden retriever in the back yard - latch the gate.",
+            alarms="No alarm on the house.",
+            parking="Park in the driveway; avoid the lawn.",
+            notes="Side gate code is on the owner's phone notes. Second-story windows on the lake side.",
+        )
+
         # Optional second job path for pipeline variety: weather-hold sibling lead/quote
         self._ensure_scheduled_weather_job(card)
         return lead
@@ -245,6 +258,56 @@ class Command(BaseCommand):
             )
             set_weather_hold(job, note="Demo weather hold — high wind")
             self._log(f"Weather-hold job #{job.pk} ready")
+        self._ensure_job_photo(job, "Lakeside Pane Co. - river-side windows (site check)")
+        self._fill_access_notes(
+            job.property,
+            pets="Indoor cat - keep doors closed.",
+            alarms="Alarm panel by the garage door; owner disarms before arrival.",
+            parking="Street parking on River Rd.",
+            notes="Ring the doorbell first; ladder access from the north side only.",
+        )
+
+    # --- Demo photos and access notes ------------------------------------
+    # Placeholder pictures are drawn here with Pillow (original graphics, no stock
+    # photos) and saved to MEDIA_ROOT like a real upload, so they stay private.
+
+    @staticmethod
+    def _placeholder_image(label: str) -> ContentFile:
+        """Draw a simple 640x480 JPEG with a fictional label; passes photo validation."""
+        img = Image.new("RGB", (640, 480), (70, 130, 180))
+        draw = ImageDraw.Draw(img)
+        draw.rectangle([40, 40, 600, 440], outline=(255, 255, 255), width=4)
+        draw.text((60, 220), label, fill=(255, 255, 255))
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=80)
+        return ContentFile(buf.getvalue(), name="demo-photo.jpg")
+
+    def _ensure_lead_photo(self, lead, label):
+        """Give the lead one private photo, only if it has none yet (idempotent)."""
+        if not lead.photos.exists():
+            LeadPhoto.objects.create(lead=lead, image=self._placeholder_image(label))
+            self._log(f"Added demo photo to lead #{lead.pk}")
+
+    def _ensure_job_photo(self, job, label):
+        """Give the job one private photo, only if it has none yet (idempotent)."""
+        if not job.photos.exists():
+            JobPhoto.objects.create(job=job, image=self._placeholder_image(label), caption=label)
+            self._log(f"Added demo photo to job #{job.pk}")
+
+    @staticmethod
+    def _fill_access_notes(prop, *, pets, alarms, parking, notes):
+        """Fill blank access fields on a demo property; never overwrite owner edits."""
+        wanted = {
+            "access_pets": pets,
+            "access_alarms": alarms,
+            "access_parking": parking,
+            "access_notes": notes,
+        }
+        changed = [field for field, value in wanted.items() if not getattr(prop, field)]
+        for field in changed:
+            setattr(prop, field, wanted[field])
+        if changed:
+            prop.save(update_fields=changed)
 
     def _ensure_extra_leads(self):
         Lead.objects.get_or_create(

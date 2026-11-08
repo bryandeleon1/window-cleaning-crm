@@ -1,18 +1,27 @@
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.management import call_command
+import tempfile
+
 from django.test import TestCase, override_settings
 
 from billing.models import Invoice, Payment
 from clients.models import Customer, Property
 from followup.models import RecurringPlan, ReviewRequest
-from jobs.models import Job
-from leads.models import Lead
+from jobs.models import Job, JobPhoto
+from leads.models import Lead, LeadPhoto
 from quoting.models import Quote, RateCard
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class SeedDemoTests(TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory(prefix="wccrm-seed-media-")
+        self.addCleanup(tmp.cleanup)
+        override = override_settings(MEDIA_ROOT=tmp.name)
+        override.enable()
+        self.addCleanup(override.disable)
+
     def test_seed_demo_creates_full_loop(self):
         call_command("seed_demo", verbosity=0)
 
@@ -42,6 +51,17 @@ class SeedDemoTests(TestCase):
         self.assertEqual(plan.frequency, RecurringPlan.Frequency.BIANNUAL)
         self.assertIsNotNone(plan.next_service_date)
 
+        # Demo photos and access notes so owner screens are not empty.
+        self.assertEqual(LeadPhoto.objects.filter(lead__email="pat.homeowner@example.com").count(), 1)
+        self.assertEqual(JobPhoto.objects.filter(job=completed).count(), 1)
+        weather = Job.objects.get(status=Job.Status.WEATHER_HOLD)
+        self.assertEqual(JobPhoto.objects.filter(job=weather).count(), 1)
+        for prop in (completed.property, weather.property):
+            self.assertTrue(prop.access_pets)
+            self.assertTrue(prop.access_alarms)
+            self.assertTrue(prop.access_parking)
+            self.assertTrue(prop.access_notes)
+
         # Review ask email went to locmem
         self.assertTrue(any("review" in m.subject.lower() for m in mail.outbox))
 
@@ -61,6 +81,8 @@ class SeedDemoTests(TestCase):
             "payments": Payment.objects.count(),
             "reviews": ReviewRequest.objects.count(),
             "plans": RecurringPlan.objects.count(),
+            "lead_photos": LeadPhoto.objects.count(),
+            "job_photos": JobPhoto.objects.count(),
         }
         call_command("seed_demo", verbosity=0)
         self.assertEqual(Lead.objects.count(), counts["leads"])
@@ -71,3 +93,5 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Payment.objects.count(), counts["payments"])
         self.assertEqual(ReviewRequest.objects.count(), counts["reviews"])
         self.assertEqual(RecurringPlan.objects.count(), counts["plans"])
+        self.assertEqual(LeadPhoto.objects.count(), counts["lead_photos"])
+        self.assertEqual(JobPhoto.objects.count(), counts["job_photos"])

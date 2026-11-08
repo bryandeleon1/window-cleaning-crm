@@ -24,6 +24,10 @@ services:
       - .env
     environment:
       DATABASE_URL: postgres://wccrm:wccrm@db:5432/wccrm
+    # Uploaded and seeded photos live in this volume (MEDIA_ROOT = /app/media),
+    # so they survive recreating the web container.
+    volumes:
+      - wccrm_media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -33,3 +37,4 @@ services:
 
 volumes:
   wccrm_pgdata:
+  wccrm_media:
