@@ -6,6 +6,7 @@ from .images import sniff_image_content_type
 
 
 def private_image_response(field_file):
+    # Retrieval re-sniffs the stored bytes and 404s rather than serving unknown content.
     if not field_file:
         raise Http404("Photo missing.")
     try:
