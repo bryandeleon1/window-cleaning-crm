@@ -15,6 +15,7 @@ from quoting.services import (
     ensure_default_rate_card,
     lose_quote,
     send_quote,
+    suggested_line_quantities_from_lead,
 )
 
 User = get_user_model()
@@ -239,3 +240,54 @@ class QuoteTransitionGuardTests(TestCase):
         self.assertEqual(self.quote.status, Quote.Status.ACCEPTED)
         self.assertEqual(Customer.objects.count(), 1)
         self.assertEqual(Job.objects.filter(quote=self.quote).count(), 1)
+
+
+class SuggestedQuantityTests(TestCase):
+    def setUp(self):
+        self.items = list(ensure_default_rate_card().items.filter(is_active=True))
+        self.by_code = {item.code: item for item in self.items}
+
+    def _lead(self, interest, estimate):
+        return Lead.objects.create(name="Q", service_interest=interest, window_pane_estimate=estimate)
+
+    def test_interest_maps_to_matching_line(self):
+        for interest, code in (
+            (Lead.ServiceInterest.EXTERIOR, "exterior"),
+            (Lead.ServiceInterest.INTERIOR, "interior"),
+            (Lead.ServiceInterest.BOTH, "both"),
+        ):
+            result = suggested_line_quantities_from_lead(self._lead(interest, 15), self.items)
+            self.assertEqual(result, {self.by_code[code].pk: 15})
+
+    def test_no_suggestion_without_estimate_or_for_unsure(self):
+        self.assertEqual(
+            suggested_line_quantities_from_lead(self._lead(Lead.ServiceInterest.EXTERIOR, None), self.items),
+            {},
+        )
+        self.assertEqual(
+            suggested_line_quantities_from_lead(self._lead(Lead.ServiceInterest.UNSURE, 10), self.items),
+            {},
+        )
+
+    def test_no_suggestion_when_line_missing(self):
+        others = [i for i in self.items if i.code != "exterior"]
+        lead = self._lead(Lead.ServiceInterest.EXTERIOR, 9)
+        self.assertEqual(suggested_line_quantities_from_lead(lead, others), {})
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class AcceptMessageTests(TestCase):
+    def test_repeat_accept_shows_already_linked_copy(self):
+        User.objects.create_user(username="owner2", password="test-pass-12345")
+        self.client.login(username="owner2", password="test-pass-12345")
+        card = ensure_default_rate_card()
+        lead = Lead.objects.create(name="Twice", email="twice@example.com", address_line1="1 St")
+        quote = build_quote_from_lead(lead, [{"item": card.items.get(code="exterior"), "quantity": Decimal("10")}])
+        url = reverse("quoting:accept", kwargs={"pk": quote.pk})
+        first = [str(m) for m in self.client.post(url, follow=True).context["messages"]]
+        second = [str(m) for m in self.client.post(url, follow=True).context["messages"]]
+        self.assertIn("Quote accepted. Customer, property, and job created.", first)
+        self.assertIn(
+            "Quote was already accepted. Customer, property, and job were already linked.", second
+        )
+        self.assertNotIn("Quote accepted. Customer, property, and job created.", second)

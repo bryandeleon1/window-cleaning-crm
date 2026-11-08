@@ -175,6 +175,19 @@ class JobPhotoPrivacyTests(TestCase):
         self.client.post(url, {"image": large_dimension_png(), "caption": "big"})
         self.assertFalse(JobPhoto.objects.filter(caption="big").exists())
 
+    def test_rejected_upload_shows_validator_message(self):
+        self.client.login(username="jordan", password="test-pass-12345")
+        url = reverse("jobs:photo_upload", kwargs={"pk": self.job.pk})
+        response = self.client.post(
+            url,
+            {"image": SimpleUploadedFile("a.jpg", b"plain text", content_type="image/jpeg")},
+            follow=True,
+        )
+        self.assertContains(response, "Upload a JPEG, PNG, GIF, or WebP image.")
+        self.assertNotContains(response, "Could not upload photo.")
+        too_big = self.client.post(url, {"image": large_dimension_png()}, follow=True)
+        self.assertContains(too_big, "This photo is too large.")
+
     def test_stored_oversized_photo_returns_404(self):
         stored = JobPhoto.objects.create(job=self.job, image=large_dimension_png())
         self.client.login(username="jordan", password="test-pass-12345")

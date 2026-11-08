@@ -120,6 +120,12 @@ def job_complete(request, pk):
     return redirect("jobs:detail", pk=job.pk)
 
 
+def _photo_upload_error(form) -> str:
+    """Show the owner why a photo was rejected (e.g. wrong type or too large)."""
+    image_errors = form.errors.get("image")
+    return image_errors[0] if image_errors else "Could not upload photo."
+
+
 @login_required
 @require_http_methods(["POST"])
 def job_photo_upload(request, pk):
@@ -132,7 +138,7 @@ def job_photo_upload(request, pk):
         photo.save()
         messages.success(request, "Photo uploaded (private).")
     else:
-        messages.error(request, "Could not upload photo.")
+        messages.error(request, _photo_upload_error(form))
     return redirect("jobs:detail", pk=job.pk)
 
 

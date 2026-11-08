@@ -101,10 +101,19 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+# Local dev default: the console backend prints emails, so no SMTP is needed.
+# A real deploy sets EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+# plus the EMAIL_HOST* settings below.
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
 )
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 
 
 MEDIA_URL = "media/"

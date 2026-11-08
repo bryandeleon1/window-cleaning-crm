@@ -89,20 +89,25 @@ def send_quote(request, pk):
     return redirect("quoting:detail", pk=quote.pk)
 
 
+def _accept_success_message(was_already_accepted: bool) -> str:
+    """Tell the owner whether this click created records or they already existed."""
+    if was_already_accepted:
+        return "Quote was already accepted. Customer, property, and job were already linked."
+    return "Quote accepted. Customer, property, and job created."
+
+
 @login_required
 @require_POST
 def accept(request, pk):
     """Owner confirms the work: creates customer, property, and job (once)."""
     quote = get_object_or_404(Quote, pk=pk)
+    was_already_accepted = quote.status == Quote.Status.ACCEPTED
     try:
         accept_quote(quote)
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect("quoting:detail", pk=quote.pk)
-    messages.success(
-        request,
-        "Quote accepted. Customer, property, and job created.",
-    )
+    messages.success(request, _accept_success_message(was_already_accepted))
     return redirect("quoting:detail", pk=quote.pk)
 
 

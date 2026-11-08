@@ -38,6 +38,9 @@ class JobPhotoUploadForm(forms.ModelForm):
             "image": forms.FileInput(attrs={"accept": "image/*"}),
             "caption": forms.TextInput(),
         }
+        help_texts = {
+            "image": "JPEG, PNG, GIF, or WebP photo up to 5 MB (stored privately).",
+        }
 
     def clean_image(self):
         image = self.cleaned_data.get("image")
